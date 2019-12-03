@@ -7,12 +7,18 @@ from model import BranchNet
 import random
 
 parser = argparse.ArgumentParser("Branch Loss Example")
+parser.add_argument('--batch-size', type=int, default=128)
+parser.add_argument('--lr-model', type=float, default=0.001, help="learning rate for model")
+parser.add_argument('--lr-cent', type=float, default=0.5, help="learning rate for center loss")
+parser.add_argument('--max-epoch', type=int, default=100)
+parser.add_argument('--stepsize', type=int, default=20)
+parser.add_argument('--gamma', type=float, default=0.5, help="learning rate decay")
 args = parser.parse_args()
 
 num_classes = 10
 branches = int(num_classes/2)
-lr_model = 0.001
-epochs = 15
+lr_model = args.lr-model
+epochs = args.max-epoch
 use_gpu = False
 random_group = True
 
