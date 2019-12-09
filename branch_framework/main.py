@@ -7,10 +7,11 @@ from model import BranchNet
 import random
 
 parser = argparse.ArgumentParser("Branch Loss Example")
-parser.add_argument('--batch-size', type=int, default=128)
+parser.add_argument('--batch-size', type=int, default=32)
 parser.add_argument('--lr-model', type=float, default=0.001, help="learning rate for model")
 parser.add_argument('--lr-cent', type=float, default=0.5, help="learning rate for center loss")
 parser.add_argument('--max-epoch', type=int, default=100)
+parser.add_argument('--use-gpu', type=bool, default=False)
 parser.add_argument('--stepsize', type=int, default=4)
 parser.add_argument('--gamma', type=float, default=0.5, help="learning rate decay")
 args = parser.parse_args()
@@ -19,8 +20,9 @@ num_classes = 10
 branches = int(num_classes/2)
 lr_model = args.lr-model
 epochs = args.max-epoch
-use_gpu = False
+use_gpu = args.use-gpu
 random_group = True
+batch_size = args.batch-size
 
 
 def choose_random_label_branch():
@@ -54,7 +56,7 @@ def main():
         print("label random, ", labels_to_branch_map)
 
     dataset = datasets.create(
-            name='mnist', batch_size=32, use_gpu=False,
+            name='mnist', batch_size=batch_size, use_gpu=False,
             num_workers=4,
         )
     trainloader, testloader = dataset.trainloader, dataset.testloader
@@ -77,6 +79,23 @@ def main():
     test(model, testloader, epochs)
 
 
+def disimialrity_compute(input1, input2, method_to_compute=nn.CosineSimilarity(dim=0, eps=1e-6)):
+    return method_to_compute(input1, input2)
+
+
+def compute_inter_branch_loss(outputs):
+
+    batch_size, branches, dimensions = outputs.size()
+
+    inter_branch_loss=0
+    for element in range(0, batch_size):
+        for i in range(0, branches-1):
+            for j in range(i+1, branches):
+                inter_branch_loss = inter_branch_loss + disimialrity_compute(outputs[element, i, :],
+                                                                             outputs[element, j, :])
+    return inter_branch_loss
+
+
 def train(model, trainloader, optimizer_model, epoch, criterion=nn.CrossEntropyLoss(), labels_to_branch_map=None,
           choose_predefined_branch=True):
 
@@ -90,10 +109,13 @@ def train(model, trainloader, optimizer_model, epoch, criterion=nn.CrossEntropyL
             v, w = torch.max(outputs, 2)
             max_values, branch_to_choose_for_label = torch.max(v, 1)
 
+        inter_branch_loss = compute_inter_branch_loss(outputs)
+
         modified_outputs = torch.stack([outputs[x, branch_to_choose_for_label[x], :] for x in range(0, len(labels))],
                                        dim=0)
 
-        loss = criterion(modified_outputs, labels)
+        loss = criterion(modified_outputs, labels) + inter_branch_loss
+
         optimizer_model.zero_grad()
         loss.backward()
         optimizer_model.step()
