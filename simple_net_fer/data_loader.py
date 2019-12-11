@@ -36,7 +36,7 @@ class CKPLUS(object):
 
         self.trainloader = trainloader
         self.testloader = testloader
-        self.num_classes = 10
+        self.num_classes = trainset.num_classes
 
     def __iter__(self):
         for i, data in enumerate(self.dataloader):

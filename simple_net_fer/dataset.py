@@ -4,14 +4,12 @@ import torch
 import numpy as np
 import PIL
 from PIL import Image
-import cv2
 import yaml
 import math
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import random
-from skimage.transform import resize
 
 
 class cohnKanadeDataLoad(Dataset):
@@ -28,6 +26,38 @@ class cohnKanadeDataLoad(Dataset):
         self.gt = []
         self.num_classes = 8 if self.include_neutral else 7
         self.test_flag = not train_flag
+
+        def get_train_and_test_set(distinct_persons, test_set_ratio=0.1):
+            total_persons = len(distinct_persons)
+            train_length = int(total_persons * (1 - test_set_ratio))
+            train_set = []
+            test_set = []
+            cnt = 0
+            for person in distinct_persons:
+                if cnt < train_length:
+                    train_set.append(person)
+                else:
+                    test_set.append(person)
+                cnt = cnt + 1
+            return train_set, test_set
+
+        def get_image_from_path(path):
+
+            img = Image.open(path)
+            return np.asarray(img)
+
+        def get_gt_from_path(path, seq_num):
+            if seq_num == 1:
+                return 8
+
+            components = path.rsplit("/", 4)
+            gt_path = components[0] + '/' + 'Emotion/' + components[2] + '/' + components[3] + '/'
+            gt_file_name = os.listdir(gt_path)[0]
+            g = open(gt_path + gt_file_name, "r")
+            gt_lines = g.readlines()
+            ground_truth = int(float(gt_lines[0][:-1]))
+            g.close()
+            return ground_truth
 
         distinct_persons = set()
         for line in self.all_lines:
@@ -55,44 +85,19 @@ class cohnKanadeDataLoad(Dataset):
         f.close()
 
 
-    def get_train_and_test_set(self, distinct_persons, test_set_ratio=0.1):
-         total_persons = len(distinct_persons)
-         train_length = int(total_persons * (1-test_set_ratio))
-         train_set = []
-         test_set = []
-         cnt = 0
-         for person in distinct_persons:
-             if cnt < train_length:
-                 train_set.append(person)
-             else:
-                 test_set.append(person)
-             cnt = cnt + 1
-         return train_set, test_set
-
-    def get_image_from_path(self, path):
-        img = io.imread(path)
-        return img
-
-    def get_gt_from_path(self, path, seq_num):
-        if seq_num == 1:
-            return 8
-
-        g = open(gt_file, "r")
-        gt_lines = g.readlines()
-
-        g.close()
-        return
 
     def __getitem__(self, index):
-        img = self.imgs[index]
-        label = to_categorical(self.gt[index], self.num_classes)
+        def to_categorical(y, num_classes):
+            return np.eye(num_classes, dtype='float')[y]
+        img = torch.from_numpy(self.imgs[index])
+        label = torch.from_numpy(to_categorical(self.gt[index], self.num_classes))
         return img, label
 
     def __len__(self):
-        return len(self.imgs)
+        return 10
+        #return len(self.imgs)
 
-    def to_categorical(self, y, num_classes):
-        return np.eye(num_classes, dtype='uint8')[y]
+
 
 # train_dataset = ucfDataLoad('/ssd_scratch/cvit/aryaman.g/action_recognition_datasets/ucfTrainTestlist/testlist01.txt',0)
 # train_dataset = retDataset('/home/aryaman.g/pyTorchLearn/biwiTrain.txt',1)
