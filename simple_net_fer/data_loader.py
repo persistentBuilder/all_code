@@ -16,8 +16,7 @@ class CKPLUS(object):
             transforms.Normalize((0.1307,), (0.3081,))
         ])
 
-        #pin_memory = True if use_gpu else False
-        pin_memory =  False
+        pin_memory = True if use_gpu else False
 
         path_file = "relevant_images_paths.txt"
         trainset = cohnKanadeDataLoad(path_file=path_file, train_flag=True, include_neutral=False)
@@ -38,11 +37,11 @@ class CKPLUS(object):
         self.testloader = testloader
         self.num_classes = trainset.num_classes
 
-    def __iter__(self):
-        for i, data in enumerate(self.dataloader):
-            if i * self.opt.batch_size >= self.opt.max_dataset_size:
-                break
-            yield data
+    # def __iter__(self):
+    #     for i, data in enumerate(self.dataloader):
+    #         if i * self.opt.batch_size >= self.opt.max_dataset_size:
+    #             break
+    #         yield data
 
 __factory = {
     'ck+': CKPLUS,
