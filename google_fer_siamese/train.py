@@ -45,16 +45,21 @@ def main():
     global args, best_acc
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
-    batch_size = args.batch-size
+    batch_size = 1
     torch.manual_seed(args.seed)
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
+
+    transform = transforms.Compose([
+                           transforms.ToTensor(),
+                           transforms.Normalize((0.1307,), (0.3081,))
+                       ])
     train_path = "data/faceexp-comparison-data-train-public.csv"
     test_path = "data/faceexp-comparison-data-test-public.csv"
-    train_dataset = SiameseGoogleFer(train_path, train_flag=True)
-    test_dataset = SiameseGoogleFer(test_path, train_flag=False)
+    train_dataset = SiameseGoogleFer(train_path, train_flag=True, transform=transform)
+    test_dataset = SiameseGoogleFer(test_path, train_flag=False, transform=transform)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, **kwargs)
 
@@ -62,16 +67,16 @@ def main():
     class Net(nn.Module):
         def __init__(self):
             super(Net, self).__init__()
-            self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
+            self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
             self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
             self.conv2_drop = nn.Dropout2d()
-            self.fc1 = nn.Linear(320, 50)
+            self.fc1 = nn.Linear(8820, 50)
             self.fc2 = nn.Linear(50, 10)
 
         def forward(self, x):
             x = F.relu(F.max_pool2d(self.conv1(x), 2))
             x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
-            x = x.view(-1, 320)
+            x = x.view(-1, 8820)
             x = F.relu(self.fc1(x))
             x = F.dropout(x, training=self.training)
             return self.fc2(x)
@@ -127,6 +132,8 @@ def train(train_loader, tnet, criterion, optimizer, epoch):
     for batch_idx, (data1, data2, data3) in enumerate(train_loader):
         if args.cuda:
             data1, data2, data3 = data1.cuda(), data2.cuda(), data3.cuda()
+        #print(data1.size())
+
         data1, data2, data3 = Variable(data1), Variable(data2), Variable(data3)
 
         # compute output
@@ -143,9 +150,10 @@ def train(train_loader, tnet, criterion, optimizer, epoch):
 
         # measure accuracy and record loss
         acc = accuracy(dista, distb)
-        losses.update(loss_triplet.data[0], data1.size(0))
+        #print(loss_embedd.data)
+        losses.update(loss_triplet.item(), data1.size(0))
         accs.update(acc, data1.size(0))
-        emb_norms.update(loss_embedd.data[0]/3, data1.size(0))
+        emb_norms.update(loss_embedd.item()/3, data1.size(0))
 
         # compute gradient and do optimizer step
         optimizer.zero_grad()
@@ -178,7 +186,7 @@ def test(test_loader, tnet, criterion, epoch):
         if args.cuda:
             target = target.cuda()
         target = Variable(target)
-        test_loss =  criterion(dista, distb, target).data[0]
+        test_loss =  criterion(dista, distb, target).item()
 
         # measure accuracy and record loss
         acc = accuracy(dista, distb)
