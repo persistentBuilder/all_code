@@ -13,27 +13,25 @@ class SiameseGoogleFer(Dataset):
     Test: Creates fixed pairs for testing
     """
 
-    def __init__(self, path, train_flag=True, transform=None):
+    def __init__(self, path, train_flag=True, transform=None, write_only_face=True):
 
         self.f = open(path, "r")
         self.train_flag = train_flag
-
-        self.all_lines = self.f.readlines()[0:500]
-        self.all_triplets = []
-        self.triplets = []
-        self.image_resize_height = 96
-        self.image_resize_width = 96
-        self.transform = transform
-
+        self.write_only_face = write_only_face
         if self.train_flag:
+            self.all_lines = self.f.readlines()[0:100]
             failed_path = "data/failed_read_train.txt"
         else:
+            self.all_lines = self.f.readlines()[0:50]
             failed_path = "data/failed_read_test.txt"
-        self.g = open(failed_path+"\n", "w")
-        # if train_flag:
-        #     self.lines = self.all_lines[0:int(len(self.all_lines)*0.9)]
-        # else:
-        #     self.lines = self.all_lines[int(len(self.all_lines)*0.9):len(self.all_lines)]
+
+        self.all_triplets = []
+        self.triplets = []
+        self.image_resize_height = 224
+        self.image_resize_width = 224
+        self.transform = transform
+
+        self.g = open(failed_path, "w")
         line_num = 0
         for line in self.all_lines:
             line_num = line_num + 1
@@ -42,50 +40,63 @@ class SiameseGoogleFer(Dataset):
             url_1 = line_components[0][1:-1]
             url_2 = line_components[5][1:-1]
             url_3 = line_components[10][1:-1]
-            #image_name_1 = url_1.split("/")[-1]
             try:
                 img_1 = self.download_and_load_image(url_1, line_num)
                 img_2 = self.download_and_load_image(url_2, line_num)
                 img_3 = self.download_and_load_image(url_3, line_num)
-                # print(img_3)
             except:
                 continue
-            bounding_box_1 = []
-            for j in range(1,5):
-                bounding_box_1.append(line_components[j])
 
-            bounding_box_2 = []
-            for j in range(6, 10):
-                bounding_box_2.append(line_components[j])
+            if img_1.shape[0] == self.image_resize_height and img_2.shape[1] == self.image_resize_width:
+                face_image_1 = img_1
+                face_image_2 = img_2
+                face_image_3 = img_3
+            else:
+                face_image_1 = self.select_face_region(img_1, line_components[1:5], img_1.shape[0], img_1.shape[1])
+                face_image_2 = self.select_face_region(img_2, line_components[6:10], img_2.shape[0], img_2.shape[1])
+                face_image_3 = self.select_face_region(img_3, line_components[11:15], img_3.shape[0], img_3.shape[1])
+                cv2.imwrite(self.get_path(url_1, line_num), self.resize_face_image(face_image_1))
+                cv2.imwrite(self.get_path(url_2, line_num), self.resize_face_image(face_image_2))
+                cv2.imwrite(self.get_path(url_3, line_num), self.resize_face_image(face_image_3))
+            #to do detect face
+            #if not (self.detect_face(face_image_1) and self.detect_face(face_image_2)
+            #        and self.detect_face(face_image_3)):
+            #    continue
 
-            bounding_box_3 = []
-            for j in range(11, 15):
-                bounding_box_3.append(line_components[j])
 
-            face_image_1 = self.select_face_region(img_1, bounding_box_1, img_1.shape[0], img_1.shape[1])
-            face_image_2 = self.select_face_region(img_2, bounding_box_2, img_2.shape[0], img_2.shape[1])
-            face_image_3 = self.select_face_region(img_3, bounding_box_3, img_3.shape[0], img_3.shape[1])
-
-            strong_flag, annontation = self.check_strong_annotation(line_num)
+            strong_flag, annotation = self.check_strong_annotation(line_components)
             if not strong_flag:
                 continue
-            if annontation == 1:
+            if annotation == 1:
                 self.triplets.append([face_image_2, face_image_3, face_image_1])
-            elif annontation == 2:
+            elif annotation == 2:
                 self.triplets.append([face_image_2, face_image_1, face_image_2])
             else:
                 self.triplets.append([face_image_1, face_image_2, face_image_3])
         self.f.close()
         self.g.close()
 
+
+    def get_majority_element(self, arr):
+        d = {}
+        max_el, max_count = 0, 0
+        for el in arr:
+            if d.get(el) != None :
+                d[el] = d[el] + 1
+            else:
+                d[el] = 1
+            if d[el] > max_count:
+                max_el = el
+                max_count = d[el]
+        return max_el, max_count
+
     def check_strong_annotation(self, line_components):
 
         votes = []
         for vote in range(17, len(line_components), 2):
-            votes.append(line_components[vote])
+            votes.append(int(line_components[vote]))
         annotation, count = self.get_majority_element(votes)
-
-        if count > int(len(votes) * (2 / 3)) :
+        if count >= int(len(votes) * (2 / 3)):
             return True, annotation
         else:
             return False, annotation
@@ -106,7 +117,7 @@ class SiameseGoogleFer(Dataset):
 
             if not response.ok:
                 print(response)
-                self.g.write(url)
+                self.g.write(url+"\n")
                 raise("url couldn't be downloaded")
 
             for block in response.iter_content(1024):
@@ -130,10 +141,9 @@ class SiameseGoogleFer(Dataset):
     def saved_image_load(self, url, line_num):
         image_path = self.get_path(url, line_num)
         try:
-            return np.asarray(Image.open(image_path).convert('RGB'))
+            return cv2.imread(image_path)
         except:
             return None
-
 
     def download_and_load_image(self, url, line_num):
         #check if not already downloaded
@@ -145,11 +155,11 @@ class SiameseGoogleFer(Dataset):
     def resize_face_image(self, img):
         return cv2.resize(img, (self.image_resize_width, self.image_resize_height), interpolation=cv2.INTER_CUBIC)
 
+    def detect_face(self, img):
+        pass
+
     def __getitem__(self, index):
         anchor_img, positive_img, negative_img = self.triplets[index]
-        anchor_img = self.resize_face_image(anchor_img)
-        positive_img = self.resize_face_image(positive_img)
-        negative_img = self.resize_face_image(negative_img)
         if self.transform is not None:
             anchor_img = self.transform(anchor_img)
             positive_img = self.transform(positive_img)
