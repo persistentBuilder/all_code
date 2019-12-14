@@ -116,7 +116,7 @@ class SiameseGoogleFer(Dataset):
             response = requests.get(url, stream=True)
 
             if not response.ok:
-                print(response)
+                #print(response)
                 self.g.write(url+"\n")
                 raise("url couldn't be downloaded")
 
