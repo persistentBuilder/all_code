@@ -34,7 +34,7 @@ class SiameseGoogleFer(Dataset):
         self.g = open(failed_path, "w")
         line_num = 0
         for line in self.all_lines:
-            line_num = line_num + 1
+            line_num += 1
             #print(line_num)
             line_components = line.split(",")
             url_1 = line_components[0][1:-1]

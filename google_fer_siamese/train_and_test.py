@@ -11,6 +11,7 @@ from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 from dataset import SiameseGoogleFer
 from tripletnet import FECNet, EmbeddNet
+from losses import TripletLoss
 import numpy as np
 
 # Training settings
@@ -45,7 +46,7 @@ def main():
     global args, best_acc
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
-    batch_size = 1
+    batch_size = 32
     torch.manual_seed(args.seed)
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
@@ -65,6 +66,8 @@ def main():
 
     model = EmbeddNet()
     tnet = FECNet(model)
+    tnet.embeddingnet.resnet.requires_grad = False
+
     if args.cuda:
         tnet.cuda()
 
@@ -83,8 +86,9 @@ def main():
 
     cudnn.benchmark = True
 
-    criterion = torch.nn.MarginRankingLoss(margin = args.margin)
-    optimizer = optim.SGD(tnet.parameters(), lr=args.lr, momentum=args.momentum)
+    criterion = TripletLoss(margin=args.margin)
+    #optimizer = optim.SGD(tnet.parameters(), lr=args.lr, momentum=args.momentum)
+    optimizer = torch.optim.Adam(tnet.parameters(), lr=args.lr)
 
     n_parameters = sum([p.data.nelement() for p in tnet.parameters()])
     print('  + Number of params: {}'.format(n_parameters))
@@ -98,17 +102,17 @@ def main():
         # remember best acc and save checkpoint
         is_best = acc > best_acc
         best_acc = max(acc, best_acc)
-        save_checkpoint({
-            'epoch': epoch + 1,
-            'state_dict': tnet.state_dict(),
-            'best_prec1': best_acc,
-        }, is_best)
+        # save_checkpoint({
+        #     'epoch': epoch + 1,
+        #     'state_dict': tnet.state_dict(),
+        #     'best_prec1': best_acc,
+        # }, is_best)
+
 
 def train(train_loader, tnet, criterion, optimizer, epoch):
-    losses = AverageMeter()
-    accs = AverageMeter()
-    emb_norms = AverageMeter()
 
+    correct, total = 0, 0
+    loss_triplet = 0.0
     # switch to train mode
     tnet.train()
     for batch_idx, (data1, data2, data3) in enumerate(train_loader):
@@ -120,63 +124,50 @@ def train(train_loader, tnet, criterion, optimizer, epoch):
         # compute output
         dista, distb, distc, embedded_x, embedded_y, embedded_z = tnet(data1, data2, data3)
         # 1 means, dista should be larger than distb
-        target = torch.FloatTensor(dista.size()).fill_(1)
-        if args.cuda:
-            target = target.cuda()
-        target = Variable(target)
-        
-        loss_triplet = criterion(dista, distb, target)
-        loss_embedd = embedded_x.norm(2) + embedded_y.norm(2) + embedded_z.norm(2)
-        loss = loss_triplet + 0.001 * loss_embedd
 
-        # measure accuracy and record loss
-        acc = accuracy(dista, distb)
-        #print(loss_embedd.data)
-        losses.update(loss_triplet.item(), data1.size(0))
-        accs.update(acc, data1.size(0))
-        emb_norms.update(loss_embedd.item()/3, data1.size(0))
+        loss = criterion(embedded_x, embedded_y, embedded_z, size_average=True) + \
+                criterion(embedded_y, embedded_x, embedded_z, size_average=True)
+        loss_triplet += loss.item()
+
+        correct += triplet_correct(dista.detach().numpy(), distb.detach().numpy(), distc.detach().numpy())
+        total += data1.size()[0]
 
         # compute gradient and do optimizer step
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        if batch_idx % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{}]\t'
-                  'Loss: {:.4f} ({:.4f}) \t'
-                  'Acc: {:.2f}% ({:.2f}%) \t'
-                  'Emb_Norm: {:.2f} ({:.2f})'.format(
-                epoch, batch_idx * len(data1), len(train_loader.dataset),
-                losses.val, losses.avg, 
-                100. * accs.val, 100. * accs.avg, emb_norms.val, emb_norms.avg))
+    print("loss  after ", epoch, " epoch: ", loss_triplet)
+    acc = correct * 100. / total
+    if epoch % 5 == 0:
+        print("train accuracy after ", epoch, " epoch: ", acc)
+
 
 def test(test_loader, tnet, criterion, epoch):
-    losses = AverageMeter()
-    accs = AverageMeter()
 
+    correct, total = 0, 0
     # switch to evaluation mode
     tnet.eval()
-    for batch_idx, (data1, data2, data3) in enumerate(test_loader):
-        if args.cuda:
-            data1, data2, data3 = data1.cuda(), data2.cuda(), data3.cuda()
-        data1, data2, data3 = Variable(data1), Variable(data2), Variable(data3)
+    with torch.no_grad():
+        for batch_idx, (data1, data2, data3) in enumerate(test_loader):
+            if args.cuda:
+                data1, data2, data3 = data1.cuda(), data2.cuda(), data3.cuda()
+            data1, data2, data3 = Variable(data1), Variable(data2), Variable(data3)
 
-        # compute output
-        dista, distb, _, _, _ = tnet(data1, data2, data3)
-        target = torch.FloatTensor(dista.size()).fill_(1)
-        if args.cuda:
-            target = target.cuda()
-        target = Variable(target)
-        test_loss = criterion(dista, distb, target).item()
+            # compute output
+            dista, distb, distc, embedded_x, embedded_y, embedded_z = tnet(data1, data2, data3)
 
-        # measure accuracy and record loss
-        acc = accuracy(dista, distb)
-        accs.update(acc, data1.size(0))
-        losses.update(test_loss, data1.size(0))      
+            loss_triplet = criterion(embedded_x, embedded_y, embedded_z, size_average=False) + \
+                           criterion(embedded_y, embedded_x, embedded_z, size_average=False)
 
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {:.2f}%\n'.format(
-        losses.avg, 100. * accs.avg))
-    return accs.avg
+            # measure accuracy and record loss
+            correct += triplet_correct(dista.detach().numpy(), distb.detach().numpy(), distc.detach().numpy())
+            total += data1.size()[0]
+
+    acc = correct * 100. / total
+    print("test accuracy after ", epoch, " epoch: ", acc)
+    return acc
+
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     """Saves checkpoint to disk"""
@@ -189,27 +180,9 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
         shutil.copyfile(filename, 'runs/%s/'%(args.name) + 'model_best.pth.tar')
 
 
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self):
-        self.reset()
+def triplet_correct(dista, distb, distc):
+    return np.logical_and(dista < distb, dista < distc).sum()
 
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
-
-def accuracy(dista, distb):
-    margin = 0
-    pred = (dista - distb - margin).cpu().data
-    return (pred > 0).sum()*1.0/dista.size()[0]
 
 if __name__ == '__main__':
     main()    

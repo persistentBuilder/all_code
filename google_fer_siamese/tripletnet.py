@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from facenet_pytorch import InceptionResnetV1
+
 
 class FECNet(nn.Module):
     def __init__(self, embeddingnet):
@@ -20,8 +22,14 @@ class FECNet(nn.Module):
 class EmbeddNet(nn.Module):
     def __init__(self):
         super(EmbeddNet, self).__init__()
+        self.resnet = InceptionResnetV1(pretrained='vggface2')
+        self.resnet.requires_grad = False
+        self.fc1 = nn.Linear(512, 16)
+        self.fc1.requires_grad = True
 
     def forward(self, x):
+        x = self.resnet(x)
+        x = self.fc1(x)
         return x
 
 
