@@ -25,4 +25,4 @@ mkdir -p "$CODE_DIR/data/images/train"
 mkdir -p "$CODE_DIR/data/images/test"
 cp /home/aryaman.g/projects/FER/FEC_dataset/* $CODE_DIR/data/
 
-python train.py
+python train_and_test.py
