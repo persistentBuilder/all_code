@@ -17,10 +17,12 @@ CODE_DIR=/ssd_scratch/cvit/aryaman.g/google_fer_siamese
 if [ ! -d "$CODE_DIR" ]; then
     cp -r ../google_fer_siamese $MY_NODE_HOME
 fi
+
 cd $CODE_DIR
-mkdir -p "data"
-mkdir -p "data/images"
-mkdir -p "data/images/train"
-mkdir -p "data/images/test"
+mkdir -p $CODE_DIR/data
+mkdir -p $CODE_DIR/data/images
+mkdir -p "$CODE_DIR/data/images/train"
+mkdir -p "$CODE_DIR/data/images/test"
+cp /home/aryaman.g/projects/FER/FEC_dataset/* $CODE_DIR/data/
 
 python train.py

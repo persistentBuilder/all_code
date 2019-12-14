@@ -18,7 +18,7 @@ class SiameseGoogleFer(Dataset):
         self.f = open(path, "r")
         self.train_flag = train_flag
 
-        self.all_lines = self.f.readlines()
+        self.all_lines = self.f.readlines()[0:500]
         self.all_triplets = []
         self.triplets = []
         self.image_resize_height = 96
@@ -65,16 +65,30 @@ class SiameseGoogleFer(Dataset):
             face_image_1 = self.select_face_region(img_1, bounding_box_1, img_1.shape[0], img_1.shape[1])
             face_image_2 = self.select_face_region(img_2, bounding_box_2, img_2.shape[0], img_2.shape[1])
             face_image_3 = self.select_face_region(img_3, bounding_box_3, img_3.shape[0], img_3.shape[1])
-            if line_components[15] == 'TWO_CLASS_TRIPLET':
-                if line_components[17] == 1:
-                    self.triplets.append([face_image_2, face_image_3, face_image_1])
-                elif line_components[17] == 2:
-                    self.triplets.append([face_image_2, face_image_1, face_image_2])
-                else:
-                    self.triplets.append([face_image_1, face_image_2, face_image_3])
+
+            strong_flag, annontation = self.check_strong_annotation(line_num)
+            if not strong_flag:
+                continue
+            if annontation == 1:
+                self.triplets.append([face_image_2, face_image_3, face_image_1])
+            elif annontation == 2:
+                self.triplets.append([face_image_2, face_image_1, face_image_2])
+            else:
+                self.triplets.append([face_image_1, face_image_2, face_image_3])
         self.f.close()
         self.g.close()
 
+    def check_strong_annotation(self, line_components):
+
+        votes = []
+        for vote in range(17, len(line_components), 2):
+            votes.append(line_components[vote])
+        annotation, count = self.get_majority_element(votes)
+
+        if count > int(len(votes) * (2 / 3)) :
+            return True, annotation
+        else:
+            return False, annotation
 
     def select_face_region(self, img, bounding_box, height, width):
 

@@ -18,4 +18,5 @@ mkdir -p "data/images"
 mkdir -p "data/images/train"
 mkdir -p "data/images/test"
 
+
 python train.py

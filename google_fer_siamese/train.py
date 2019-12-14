@@ -10,7 +10,7 @@ from torchvision import datasets, transforms
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 from dataset import SiameseGoogleFer
-from tripletnet import Tripletnet
+from tripletnet import FECNet, EmbeddNet
 import numpy as np
 
 # Training settings
@@ -63,26 +63,8 @@ def main():
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, **kwargs)
 
-
-    class Net(nn.Module):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
-            self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
-            self.conv2_drop = nn.Dropout2d()
-            self.fc1 = nn.Linear(8820, 50)
-            self.fc2 = nn.Linear(50, 10)
-
-        def forward(self, x):
-            x = F.relu(F.max_pool2d(self.conv1(x), 2))
-            x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
-            x = x.view(-1, 8820)
-            x = F.relu(self.fc1(x))
-            x = F.dropout(x, training=self.training)
-            return self.fc2(x)
-
-    model = Net()
-    tnet = Tripletnet(model)
+    model = EmbeddNet()
+    tnet = FECNet(model)
     if args.cuda:
         tnet.cuda()
 
@@ -132,12 +114,11 @@ def train(train_loader, tnet, criterion, optimizer, epoch):
     for batch_idx, (data1, data2, data3) in enumerate(train_loader):
         if args.cuda:
             data1, data2, data3 = data1.cuda(), data2.cuda(), data3.cuda()
-        #print(data1.size())
 
         data1, data2, data3 = Variable(data1), Variable(data2), Variable(data3)
 
         # compute output
-        dista, distb, embedded_x, embedded_y, embedded_z = tnet(data1, data2, data3)
+        dista, distb, distc, embedded_x, embedded_y, embedded_z = tnet(data1, data2, data3)
         # 1 means, dista should be larger than distb
         target = torch.FloatTensor(dista.size()).fill_(1)
         if args.cuda:
@@ -186,7 +167,7 @@ def test(test_loader, tnet, criterion, epoch):
         if args.cuda:
             target = target.cuda()
         target = Variable(target)
-        test_loss =  criterion(dista, distb, target).item()
+        test_loss = criterion(dista, distb, target).item()
 
         # measure accuracy and record loss
         acc = accuracy(dista, distb)
