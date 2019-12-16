@@ -13,18 +13,22 @@ class SiameseGoogleFer(Dataset):
     Test: Creates fixed pairs for testing
     """
 
-    def __init__(self, path, train_flag=True, transform=None, write_only_face=True):
+    def __init__(self, path, train_flag=True, transform=None, write_only_face=True, divisions=1, current_division=0):
 
         self.f = open(path, "r")
         self.train_flag = train_flag
         self.write_only_face = write_only_face
+        self.all_lines = self.f.readlines()
+        self.divisions = divisions
+
+        self.current_lines = self.get_lines(current_division)
+        
         if self.train_flag:
-            self.all_lines = self.f.readlines()[0:100]
             failed_path = "data/failed_read_train.txt"
         else:
-            self.all_lines = self.f.readlines()[0:50]
             failed_path = "data/failed_read_test.txt"
 
+        print(len(self.current_lines))
         self.all_triplets = []
         self.triplets = []
         self.image_resize_height = 224
@@ -33,7 +37,7 @@ class SiameseGoogleFer(Dataset):
 
         self.g = open(failed_path, "w")
         line_num = 0
-        for line in self.all_lines:
+        for line in self.current_lines:
             line_num += 1
             #print(line_num)
             line_components = line.split(",")
@@ -47,7 +51,9 @@ class SiameseGoogleFer(Dataset):
             except:
                 continue
 
-            if img_1.shape[0] == self.image_resize_height and img_2.shape[1] == self.image_resize_width:
+            if img_1.shape[0] == self.image_resize_height and img_1.shape[1] == self.image_resize_width and \
+                img_2.shape[0] == self.image_resize_height and img_2.shape[1] == self.image_resize_width and \
+                img_3.shape[0] == self.image_resize_height and img_3.shape[1] == self.image_resize_width:
                 face_image_1 = img_1
                 face_image_2 = img_2
                 face_image_3 = img_3
@@ -76,6 +82,11 @@ class SiameseGoogleFer(Dataset):
         self.f.close()
         self.g.close()
 
+    def get_lines(self, current_division):
+        l = len(self.all_lines) 
+        start = int((l/self.divisions)*current_division)
+        end = int((l/self.divisions)*(current_division+1)) if current_division < self.divisions - 1 else l 
+        return self.all_lines[start:end]
 
     def get_majority_element(self, arr):
         d = {}
@@ -160,6 +171,9 @@ class SiameseGoogleFer(Dataset):
 
     def __getitem__(self, index):
         anchor_img, positive_img, negative_img = self.triplets[index]
+        anchor_img = self.resize_face_image(anchor_img)
+        positive_img = self.resize_face_image(positive_img)
+        negative_img = self.resize_face_image(negative_img)
         if self.transform is not None:
             anchor_img = self.transform(anchor_img)
             positive_img = self.transform(positive_img)

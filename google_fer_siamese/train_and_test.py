@@ -13,17 +13,20 @@ from dataset import SiameseGoogleFer
 from tripletnet import FECNet, EmbeddNet
 from losses import TripletLoss
 import numpy as np
+import time
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch siamese triplet loss for google fer')
 parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                     help='input batch size for training (default: 64)')
+parser.add_argument('--divisions', type=int, default=5000,
+                    help='number of parts to divide dataset into (default: 5000)')
 parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
                     help='input batch size for testing (default: 1000)')
-parser.add_argument('--epochs', type=int, default=10, metavar='N',
-                    help='number of epochs to train (default: 10)')
-parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
-                    help='learning rate (default: 0.01)')
+parser.add_argument('--epochs', type=int, default=50, metavar='N',
+                    help='number of epochs to train (default: 50)')
+parser.add_argument('--lr', type=float, default=0.0005, metavar='LR',
+                    help='learning rate (default: 0.0005)')
 parser.add_argument('--momentum', type=float, default=0.5, metavar='M',
                     help='SGD momentum (default: 0.5)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
@@ -46,6 +49,7 @@ def main():
     global args, best_acc
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
+    print("using gpu: ", args.cuda)
     batch_size = 32
     torch.manual_seed(args.seed)
     if args.cuda:
@@ -59,14 +63,15 @@ def main():
                        ])
     train_path = "data/faceexp-comparison-data-train-public.csv"
     test_path = "data/faceexp-comparison-data-test-public.csv"
-    train_dataset = SiameseGoogleFer(train_path, train_flag=True, transform=transform)
-    test_dataset = SiameseGoogleFer(test_path, train_flag=False, transform=transform)
+    train_dataset = SiameseGoogleFer(train_path, train_flag=True, transform=transform, divisions=args.divisions)
+    test_dataset = SiameseGoogleFer(test_path, train_flag=False, transform=transform, divisions=args.divisions)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, **kwargs)
 
     model = EmbeddNet()
     tnet = FECNet(model)
-    tnet.embeddingnet.resnet.requires_grad = False
+    #tnet.embeddingnet.resnet.requires_grad = False
+    tnet = nn.DataParallel(tnet)
 
     if args.cuda:
         tnet.cuda()
@@ -95,7 +100,11 @@ def main():
 
     for epoch in range(1, args.epochs + 1):
         # train for one epoch
+        t = time.time()
         train(train_loader, tnet, criterion, optimizer, epoch)
+        print("time take for epoch ", epoch, ": ", time.time()-t)
+        print("-------------------------------------------------------------------")
+        print("\n")
         # evaluate on validation set
         acc = test(test_loader, tnet, criterion, epoch)
 
@@ -120,7 +129,8 @@ def train(train_loader, tnet, criterion, optimizer, epoch):
             data1, data2, data3 = data1.cuda(), data2.cuda(), data3.cuda()
 
         data1, data2, data3 = Variable(data1), Variable(data2), Variable(data3)
-
+        if data1.size()[0]==1:
+            continue
         # compute output
         dista, distb, distc, embedded_x, embedded_y, embedded_z = tnet(data1, data2, data3)
         # 1 means, dista should be larger than distb
@@ -129,7 +139,7 @@ def train(train_loader, tnet, criterion, optimizer, epoch):
                 criterion(embedded_y, embedded_x, embedded_z, size_average=True)
         loss_triplet += loss.item()
 
-        correct += triplet_correct(dista.detach().numpy(), distb.detach().numpy(), distc.detach().numpy())
+        correct += triplet_correct(dista.detach().cpu().clone().numpy(), distb.detach().cpu().clone().numpy(), distc.detach().cpu().clone().numpy())
         total += data1.size()[0]
 
         # compute gradient and do optimizer step
@@ -153,6 +163,8 @@ def test(test_loader, tnet, criterion, epoch):
             if args.cuda:
                 data1, data2, data3 = data1.cuda(), data2.cuda(), data3.cuda()
             data1, data2, data3 = Variable(data1), Variable(data2), Variable(data3)
+            if data1.size()[0]==1:
+                continue
 
             # compute output
             dista, distb, distc, embedded_x, embedded_y, embedded_z = tnet(data1, data2, data3)
@@ -161,7 +173,8 @@ def test(test_loader, tnet, criterion, epoch):
                            criterion(embedded_y, embedded_x, embedded_z, size_average=False)
 
             # measure accuracy and record loss
-            correct += triplet_correct(dista.detach().numpy(), distb.detach().numpy(), distc.detach().numpy())
+            correct += triplet_correct(dista.detach().cpu().clone().numpy(), distb.detach().cpu().clone().numpy(), distc.detach().cpu().clone().numpy())
+            #correct += triplet_correct(dista.detach().numpy(), distb.detach().numpy(), distc.detach().numpy())
             total += data1.size()[0]
 
     acc = correct * 100. / total
