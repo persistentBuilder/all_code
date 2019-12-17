@@ -85,15 +85,14 @@ class SiameseGoogleFer(Dataset):
                                  img.shape[1] == self.image_resize_width
 
         face_images = []
-        if imgs_are_face_imgs:
-            for img in imgs:
+        for i in range(0, len(imgs)):
+            img = imgs[i]
+            if imgs_are_face_imgs:
                 face_images.append(img)
-        else:
-            for i in range(0, len(imgs)):
-                img = imgs[i]
+            else:
                 face_image = self.resize_face_image(self.select_face_region(img, line_components[1:5],
                                                                             img.shape[0], img.shape[1]))
-                face_images.append()
+                face_images.append(face_image)
                 cv2.imwrite(self.get_path(url_for_image[i], line_num), face_image)
         return face_images[0], face_images[1], face_images[2]
 
@@ -193,6 +192,9 @@ class SiameseGoogleFer(Dataset):
             line_components = self.current_lines[index].split(",")
             strong_flag, annotation = self.check_strong_annotation(line_components)
             face_image_1, face_image_2, face_image_3 = self.get_face_images(line_components, index)
+            if (not strong_flag) or (face_image_1 is None):
+                raise("either not strong annotation or image could not be loaded")
+
             anchor_img, positive_img, negative_img = self.shuffle_based_on_annotations(annotation, face_image_1,
                                                                                        face_image_2, face_image_3)
 
