@@ -13,16 +13,18 @@ class SiameseGoogleFer(Dataset):
     Test: Creates fixed pairs for testing
     """
 
-    def __init__(self, path, train_flag=True, transform=None, write_only_face=True, divisions=1, current_division=0):
+    def __init__(self, path, train_flag=True, transform=None, write_only_face=True, divisions=1, current_division=0,
+                 load_in_memory=True):
 
         self.f = open(path, "r")
         self.train_flag = train_flag
         self.write_only_face = write_only_face
         self.all_lines = self.f.readlines()
         self.divisions = divisions
+        self.load_in_memory = load_in_memory
 
         self.current_lines = self.get_lines(current_division)
-        
+
         if self.train_flag:
             failed_path = "data/failed_read_train.txt"
         else:
@@ -39,46 +41,22 @@ class SiameseGoogleFer(Dataset):
         line_num = 0
         for line in self.current_lines:
             line_num += 1
-            #print(line_num)
+            #print
             line_components = line.split(",")
-            url_1 = line_components[0][1:-1]
-            url_2 = line_components[5][1:-1]
-            url_3 = line_components[10][1:-1]
-            try:
-                img_1 = self.download_and_load_image(url_1, line_num)
-                img_2 = self.download_and_load_image(url_2, line_num)
-                img_3 = self.download_and_load_image(url_3, line_num)
-            except:
-                continue
+            face_image_1, face_image_2, face_image_3 = self.get_face_images(line_components, line_num)
 
-            if img_1.shape[0] == self.image_resize_height and img_1.shape[1] == self.image_resize_width and \
-                img_2.shape[0] == self.image_resize_height and img_2.shape[1] == self.image_resize_width and \
-                img_3.shape[0] == self.image_resize_height and img_3.shape[1] == self.image_resize_width:
-                face_image_1 = img_1
-                face_image_2 = img_2
-                face_image_3 = img_3
-            else:
-                face_image_1 = self.select_face_region(img_1, line_components[1:5], img_1.shape[0], img_1.shape[1])
-                face_image_2 = self.select_face_region(img_2, line_components[6:10], img_2.shape[0], img_2.shape[1])
-                face_image_3 = self.select_face_region(img_3, line_components[11:15], img_3.shape[0], img_3.shape[1])
-                cv2.imwrite(self.get_path(url_1, line_num), self.resize_face_image(face_image_1))
-                cv2.imwrite(self.get_path(url_2, line_num), self.resize_face_image(face_image_2))
-                cv2.imwrite(self.get_path(url_3, line_num), self.resize_face_image(face_image_3))
+            strong_flag, annotation = self.check_strong_annotation(line_components)
+            if (not strong_flag) or (face_image_1 is None):
+                continue
             #to do detect face
             #if not (self.detect_face(face_image_1) and self.detect_face(face_image_2)
             #        and self.detect_face(face_image_3)):
             #    continue
-
-
-            strong_flag, annotation = self.check_strong_annotation(line_components)
-            if not strong_flag:
-                continue
-            if annotation == 1:
-                self.triplets.append([face_image_2, face_image_3, face_image_1])
-            elif annotation == 2:
-                self.triplets.append([face_image_2, face_image_1, face_image_2])
-            else:
+            if self.load_in_memory:
+                face_image_1, face_image_2, face_image_3 = self.shuffle_based_on_annotations(annotation, face_image_1,
+                                                                                             face_image_2, face_image_3)
                 self.triplets.append([face_image_1, face_image_2, face_image_3])
+
         self.f.close()
         self.g.close()
 
@@ -87,6 +65,45 @@ class SiameseGoogleFer(Dataset):
         start = int((l/self.divisions)*current_division)
         end = int((l/self.divisions)*(current_division+1)) if current_division < self.divisions - 1 else l 
         return self.all_lines[start:end]
+
+    def get_face_images(self, line_components, line_num):
+
+        url_for_image = []
+        url_for_image.append(line_components[0][1:-1])
+        url_for_image.append(line_components[5][1:-1])
+        url_for_image.append(line_components[10][1:-1])
+        try:
+            imgs = []
+            for url in url_for_image:
+                imgs.append(self.download_and_load_image(url, line_num))
+        except:
+            return None, None, None
+
+        imgs_are_face_imgs = True
+        for img in imgs:
+            imgs_are_face_imgs = imgs_are_face_imgs and img.shape[0] == self.image_resize_height and \
+                                 img.shape[1] == self.image_resize_width
+
+        face_images = []
+        if imgs_are_face_imgs:
+            for img in imgs:
+                face_images.append(img)
+        else:
+            for i in range(0, len(imgs)):
+                img = imgs[i]
+                face_image = self.resize_face_image(self.select_face_region(img, line_components[1:5],
+                                                                            img.shape[0], img.shape[1]))
+                face_images.append()
+                cv2.imwrite(self.get_path(url_for_image[i], line_num), face_image)
+        return face_images[0], face_images[1], face_images[2]
+
+    def shuffle_based_on_annotations(self, annotation, face_image_1, face_image_2, face_image_3):
+        if annotation == 1:
+            return face_image_2, face_image_3, face_image_1
+        elif annotation == 2:
+            return face_image_2, face_image_1, face_image_2
+        else:
+            return face_image_1, face_image_2, face_image_3
 
     def get_majority_element(self, arr):
         d = {}
@@ -170,7 +187,15 @@ class SiameseGoogleFer(Dataset):
         pass
 
     def __getitem__(self, index):
-        anchor_img, positive_img, negative_img = self.triplets[index]
+        if self.load_in_memory:
+            anchor_img, positive_img, negative_img = self.triplets[index]
+        else:
+            line_components = self.current_lines[index].split(",")
+            strong_flag, annotation = self.check_strong_annotation(line_components)
+            face_image_1, face_image_2, face_image_3 = self.get_face_images(line_components, index)
+            anchor_img, positive_img, negative_img = self.shuffle_based_on_annotations(annotation, face_image_1,
+                                                                                       face_image_2, face_image_3)
+
         anchor_img = self.resize_face_image(anchor_img)
         positive_img = self.resize_face_image(positive_img)
         negative_img = self.resize_face_image(negative_img)

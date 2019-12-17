@@ -103,11 +103,10 @@ def main():
         t = time.time()
         train(train_loader, tnet, criterion, optimizer, epoch)
         print("time take for epoch ", epoch, ": ", time.time()-t)
-        print("-------------------------------------------------------------------")
-        print("\n")
         # evaluate on validation set
         acc = test(test_loader, tnet, criterion, epoch)
-
+        print("-------------------------------------------------------------------")
+        print("\n")
         # remember best acc and save checkpoint
         is_best = acc > best_acc
         best_acc = max(acc, best_acc)
@@ -139,7 +138,8 @@ def train(train_loader, tnet, criterion, optimizer, epoch):
                 criterion(embedded_y, embedded_x, embedded_z, size_average=True)
         loss_triplet += loss.item()
 
-        correct += triplet_correct(dista.detach().cpu().clone().numpy(), distb.detach().cpu().clone().numpy(), distc.detach().cpu().clone().numpy())
+        correct += triplet_correct(dista.detach().cpu().clone().numpy(), distb.detach().cpu().clone().numpy(),
+                                   distc.detach().cpu().clone().numpy())
         total += data1.size()[0]
 
         # compute gradient and do optimizer step
@@ -163,7 +163,7 @@ def test(test_loader, tnet, criterion, epoch):
             if args.cuda:
                 data1, data2, data3 = data1.cuda(), data2.cuda(), data3.cuda()
             data1, data2, data3 = Variable(data1), Variable(data2), Variable(data3)
-            if data1.size()[0]==1:
+            if data1.size()[0] == 1:
                 continue
 
             # compute output
@@ -173,7 +173,8 @@ def test(test_loader, tnet, criterion, epoch):
                            criterion(embedded_y, embedded_x, embedded_z, size_average=False)
 
             # measure accuracy and record loss
-            correct += triplet_correct(dista.detach().cpu().clone().numpy(), distb.detach().cpu().clone().numpy(), distc.detach().cpu().clone().numpy())
+            correct += triplet_correct(dista.detach().cpu().clone().numpy(), distb.detach().cpu().clone().numpy(),
+                                       distc.detach().cpu().clone().numpy())
             #correct += triplet_correct(dista.detach().numpy(), distb.detach().numpy(), distc.detach().numpy())
             total += data1.size()[0]
 
