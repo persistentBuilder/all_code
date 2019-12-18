@@ -52,6 +52,7 @@ class SiameseGoogleFer(Dataset):
             #if not (self.detect_face(face_image_1) and self.detect_face(face_image_2)
             #        and self.detect_face(face_image_3)):
             #    continue
+            #print(line)
             if self.load_in_memory:
                 face_image_1, face_image_2, face_image_3 = self.shuffle_based_on_annotations(annotation, face_image_1,
                                                                                              face_image_2, face_image_3)
@@ -61,7 +62,7 @@ class SiameseGoogleFer(Dataset):
         self.g.close()
 
     def get_lines(self, current_division):
-        l = len(self.all_lines) 
+        l = len(self.all_lines)
         start = int((l/self.divisions)*current_division)
         end = int((l/self.divisions)*(current_division+1)) if current_division < self.divisions - 1 else l 
         return self.all_lines[start:end]
@@ -90,7 +91,7 @@ class SiameseGoogleFer(Dataset):
             if imgs_are_face_imgs:
                 face_images.append(img)
             else:
-                face_image = self.resize_face_image(self.select_face_region(img, line_components[1:5],
+                face_image = self.resize_face_image(self.select_face_region(img, line_components[i*5+1:(i+1)*5],
                                                                             img.shape[0], img.shape[1]))
                 face_images.append(face_image)
                 cv2.imwrite(self.get_path(url_for_image[i], line_num), face_image)

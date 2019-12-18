@@ -6,4 +6,4 @@
 
 source ~/packages/keras_tf_venv3/bin/activate
 
-python download_dataset_using_dataloader.py
+python multiprocess_dataset_download.py --train=1 --divisions=1
