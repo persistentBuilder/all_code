@@ -5,21 +5,6 @@ from facenet_pytorch import InceptionResnetV1
 from densenet import *
 
 
-class FECNet(nn.Module):
-    def __init__(self, embeddingnet):
-        super(FECNet, self).__init__()
-        self.embeddingnet = embeddingnet
-
-    def forward(self, x, y, z):
-        embedded_x = self.embeddingnet(x)
-        embedded_y = self.embeddingnet(y)
-        embedded_z = self.embeddingnet(z)
-        dist_a = F.pairwise_distance(embedded_x, embedded_y, 2)
-        dist_b = F.pairwise_distance(embedded_x, embedded_z, 2)
-        dist_c = F.pairwise_distance(embedded_y, embedded_z, 2)
-        return dist_a, dist_b, dist_c, embedded_x, embedded_y, embedded_z
-
-
 class extendNet(nn.Module):
     def __init__(self, num_classes):
         super(extendNet, self).__init__()
