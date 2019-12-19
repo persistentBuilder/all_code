@@ -6,21 +6,20 @@ import numpy as np
 import pickle
 import torchvision.transforms as transforms
 
-from dataset import cohnKanadeDataLoad
+from dataset import CohnKanadeDataLoad
 
 
 class CKPLUS(object):
     def __init__(self, batch_size, use_gpu, num_workers):
         transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
+            transforms.ToTensor()
         ])
 
         pin_memory = True if use_gpu else False
 
         path_file = "relevant_images_paths.txt"
-        trainset = cohnKanadeDataLoad(path_file=path_file, train_flag=True, include_neutral=False)
-        testset = cohnKanadeDataLoad(path_file=path_file, train_flag=False, include_neutral=False)
+        trainset = CohnKanadeDataLoad(path_file=path_file, train_flag=True, include_neutral=False, transform=transform)
+        testset = CohnKanadeDataLoad(path_file=path_file, train_flag=False, include_neutral=False, transform=transform)
 
         trainloader = torch.utils.data.DataLoader(
             trainset, batch_size=batch_size, shuffle=True,

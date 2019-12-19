@@ -7,43 +7,38 @@ class simpleNet(nn.Module):
     def __init__(self, num_classes):
         super(simpleNet, self).__init__()
         self.num_classes = num_classes
-        self.branches = int(self.num_classes/2)
-        self.conv1_1 = nn.Conv2d(1, 32, 5, stride=1, padding=2)
-        self.prelu1_1 = nn.PReLU()
-        self.conv1_2 = nn.Conv2d(32, 32, 5, stride=1, padding=2)
-        self.prelu1_2 = nn.PReLU()
+        self.conv1 = nn.Conv2d(3, 50, kernel_size=5)
+        self.conv1_bn = nn.BatchNorm2d(50)
+        self.conv1_drop = nn.Dropout2d(p=0.1)
 
-        self.conv2_1 = nn.Conv2d(32, 64, 5, stride=1, padding=2)
-        self.prelu2_1 = nn.PReLU()
-        self.conv2_2 = nn.Conv2d(64, 64, 5, stride=1, padding=2)
-        self.prelu2_2 = nn.PReLU()
+        self.conv2 = nn.Conv2d(50, 100, kernel_size=5)
+        self.conv2_bn = nn.BatchNorm2d(100)
+        self.conv2_drop = nn.Dropout2d(p=0.1)
 
-        self.conv3_1 = nn.Conv2d(64, 128, 5, stride=1, padding=2)
-        self.prelu3_1 = nn.PReLU()
-        self.conv3_2 = nn.Conv2d(128, 128, 5, stride=1, padding=2)
-        self.prelu3_2 = nn.PReLU()
-        self.fc1 = []
-        self.fc2 = []
-        self.prelu_fc1 = []
-        for branch in range(0, self.branches):
-            self.fc1.append(nn.Linear(128*3*3, 32))
-            self.prelu_fc1.append(nn.PReLU())
-            self.fc2.append(nn.Linear(32, self.num_classes))
+        self.conv3 = nn.Conv2d(100, 150, kernel_size=5)
+        self.conv3_bn = nn.BatchNorm2d(150)
+        self.conv3_drop = nn.Dropout2d(p=0.2)
+
+        # fully connected layers
+        self.fc1 = nn.Linear(9600, 300)
+        self.fc1_bn = nn.BatchNorm1d(300)
+        self.fc1_drop = nn.Dropout(p=0.3)
+
+        self.fc2 = nn.Linear(300, 300)
+        self.fc2_bn = nn.BatchNorm1d(300)
+        self.fc2_drop = nn.Dropout(p=0.4)
+
+        self.fc3 = nn.Linear(300, self.num_classes)
 
     def forward(self, x):
+        x = F.relu(F.max_pool2d(self.conv1_drop((self.conv1(x))), 2))
+        x = F.relu(F.max_pool2d(self.conv2_drop((self.conv2(x))), 2))
+        x = F.relu(F.max_pool2d(self.conv3_drop((self.conv3(x))), 2))
+        x = x.view(x.size()[0], -1)
+        x = F.relu(self.fc1_drop((self.fc1(x))))
+        # x = F.relu(self.fc1_drop(self.fc1_bn(self.fc1(x))))
+        x = F.relu(self.fc2_drop((self.fc2(x))))
+        # x = F.relu(self.fc2_drop(self.fc2_bn(self.fc2(x))))
+        x = self.fc3(x)
 
-        x = self.prelu1_1(self.conv1_1(x))
-        x = self.prelu1_2(self.conv1_2(x))
-        x = F.max_pool2d(x, 2)
-
-        x = self.prelu2_1(self.conv2_1(x))
-        x = self.prelu2_2(self.conv2_2(x))
-        x = F.max_pool2d(x, 2)
-
-        x = self.prelu3_1(self.conv3_1(x))
-        x = self.prelu3_2(self.conv3_2(x))  
-        x = F.max_pool2d(x, 2)
-        x_size = x.size()
-        x = x.view(-1, x_size[1]*x_size[2]*x_size[3])
-
-        return out
+        return x

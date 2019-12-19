@@ -10,9 +10,9 @@ from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import random
+import cv2
 
-
-class cohnKanadeDataLoad(Dataset):
+class CohnKanadeDataLoad(Dataset):
 
     def __init__(self, path_file, train_flag=True, include_neutral=False, transform=None):
 
@@ -23,6 +23,8 @@ class cohnKanadeDataLoad(Dataset):
         self.include_neutral = include_neutral
         self.all_gt = []
         self.imgs = []
+        self.image_resize_height = 224
+        self.image_resize_width = 224
         self.gt = []
         self.num_classes = 8 if self.include_neutral else 7
         self.test_flag = not train_flag
@@ -52,6 +54,9 @@ class cohnKanadeDataLoad(Dataset):
             cnt = cnt + 1
         f.close()
 
+    def resize_face_image(self, img):
+        return cv2.resize(img, (self.image_resize_width, self.image_resize_height), interpolation=cv2.INTER_CUBIC)
+
     def get_train_and_test_set(self, distinct_persons, test_set_ratio=0.1):
         total_persons = len(distinct_persons)
         train_length = int(total_persons * (1 - test_set_ratio))
@@ -68,8 +73,9 @@ class cohnKanadeDataLoad(Dataset):
 
     def get_image_from_path(self, path):
 
-        img = Image.open(path)
-        return np.asarray(img)
+        #img = Image.open(path)
+        img = cv2.imread(path)
+        return img
 
     def get_gt_from_path(self, path, seq_num):
         if seq_num == 1:
@@ -86,8 +92,11 @@ class cohnKanadeDataLoad(Dataset):
 
     def __getitem__(self, index):
 
-        img = torch.from_numpy(self.imgs[index])
-        label = torch.from_numpy(self.to_categorical(self.gt[index]))
+        img = self.resize_face_image(self.imgs[index])
+        print(type(img))
+        if self.transform:
+            img = self.transform(img)
+        label = self.to_categorical(self.gt[index])
         return img, label
 
     def __len__(self):
@@ -96,8 +105,3 @@ class cohnKanadeDataLoad(Dataset):
 
     def to_categorical(self, y):
         return np.eye(self.num_classes, dtype='float')[y]
-
-# train_dataset = ucfDataLoad('/ssd_scratch/cvit/aryaman.g/action_recognition_datasets/ucfTrainTestlist/testlist01.txt',0)
-# train_dataset = retDataset('/home/aryaman.g/pyTorchLearn/biwiTrain.txt',1)
-# train_dataset = biwiDataset('/ssd_scratch/cvit/aryaman.g/biwiHighResHM/allHM',1)
-# print(train_dataset.__getitem__(2))
