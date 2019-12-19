@@ -6,12 +6,13 @@ from torch.autograd import Variable
 from data_loader import create
 import argparse
 from model import simpleNet
+from extendNet import extendNet
 import random
 import time
 
 parser = argparse.ArgumentParser("Branch Loss Example")
 parser.add_argument('--batch_size', type=int, default=32)
-parser.add_argument('--lr', type=float, default=0.001, help="learning rate for model")
+parser.add_argument('--lr', type=float, default=0.0001, help="learning rate for model")
 parser.add_argument('--epochs', type=int, default=50)
 parser.add_argument('--include_neutral', type=bool, default=False)
 parser.add_argument('--resume', default='', type=str,
@@ -34,6 +35,7 @@ def main():
     test_loader = dataset.testloader
 
     model = simpleNet(num_classes)
+    model = extendNet(num_classes)
 
     if args.cuda:
         model.cuda()
@@ -84,6 +86,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
     for batch_idx, (data, label) in enumerate(train_loader):
         if args.cuda:
             data = data.cuda()
+            label = label.cuda()
 
         data = Variable(data)
         # compute output
@@ -91,7 +94,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
         loss = criterion(output, label)
         _, predictions = torch.max(output.data, 1)
         loss_triplet += loss.item()
-        correct += (predictions == label.data).sum()
+        correct += (predictions == label.data).sum().item()
         total += data.size()[0]
 
         # compute gradient and do optimizer step
@@ -103,6 +106,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
     acc = correct * 100. / total
     if epoch % 5 == 0:
         print("train accuracy after ", epoch, " epoch: ", acc)
+        print("train samples :", total)
 
 
 def test(test_loader, model, criterion, epoch):
@@ -114,6 +118,7 @@ def test(test_loader, model, criterion, epoch):
     with torch.no_grad():
         for batch_idx, (data, label) in enumerate(test_loader):
             if args.cuda:
+                label = label.cuda()
                 data = data.cuda()
 
             data = Variable(data)
@@ -125,11 +130,12 @@ def test(test_loader, model, criterion, epoch):
             loss_triplet += loss.item()
             _, predictions = torch.max(output.data, 1)
             # measure accuracy and record loss
-            correct += (predictions == label.data).sum()
+            correct += (predictions == label.data).sum().item()
             total += data.size()[0]
 
     acc = correct * 100. / total
     print("test accuracy after ", epoch, " epoch: ", acc)
+    print("test samples :", total)
     return acc
 
 

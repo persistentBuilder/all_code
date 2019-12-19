@@ -40,6 +40,8 @@ class CohnKanadeDataLoad(Dataset):
         cnt = 0
         for line in self.all_lines:
             line = line[:-1]
+            base = '/home/aryaman.g/projects/FER/dataset/'
+            line = base+line.split("/", 5)[-1]
             person_set = line.rsplit("/", 1)[-1].split("_")[0]
             if (self.train_flag and person_set in train_set) or (self.test_flag and person_set in test_set):
                 seq_num = int(line.rsplit("/",1)[-1].rsplit("_",1)[-1].split(".")[0])
@@ -72,7 +74,6 @@ class CohnKanadeDataLoad(Dataset):
         return train_set, test_set
 
     def get_image_from_path(self, path):
-
         #img = Image.open(path)
         img = cv2.imread(path)
         return img
@@ -99,8 +100,7 @@ class CohnKanadeDataLoad(Dataset):
         return img, self.gt[index]-1
 
     def __len__(self):
-        return 10
-        #return len(self.imgs)
+        return len(self.imgs)
 
     def to_categorical(self, y):
         return np.eye(self.num_classes, dtype='int')[y]
