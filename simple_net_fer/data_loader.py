@@ -12,6 +12,7 @@ from dataset import CohnKanadeDataLoad
 class CKPLUS(object):
     def __init__(self, batch_size, use_gpu, num_workers):
         transform = transforms.Compose([
+            transforms.ToPILImage(),
             transforms.ToTensor()
         ])
 

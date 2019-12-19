@@ -93,15 +93,14 @@ class CohnKanadeDataLoad(Dataset):
     def __getitem__(self, index):
 
         img = self.resize_face_image(self.imgs[index])
-        print(type(img))
         if self.transform:
             img = self.transform(img)
-        label = self.to_categorical(self.gt[index])
-        return img, label
+        #label = self.to_categorical(self.gt[index]-1)
+        return img, self.gt[index]-1
 
     def __len__(self):
         return 10
         #return len(self.imgs)
 
     def to_categorical(self, y):
-        return np.eye(self.num_classes, dtype='float')[y]
+        return np.eye(self.num_classes, dtype='int')[y]

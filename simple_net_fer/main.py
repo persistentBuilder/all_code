@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from torch.autograd import Variable
 #import datasets
 from data_loader import create
 import argparse
@@ -88,10 +89,10 @@ def train(train_loader, model, criterion, optimizer, epoch):
         # compute output
         output = model(data)
         loss = criterion(output, label)
-        _, prediction = torch.max(output.data, 1)
+        _, predictions = torch.max(output.data, 1)
         loss_triplet += loss.item()
         correct += (predictions == label.data).sum()
-        total += data1.size()[0]
+        total += data.size()[0]
 
         # compute gradient and do optimizer step
         optimizer.zero_grad()
@@ -122,7 +123,7 @@ def test(test_loader, model, criterion, epoch):
 
             loss = criterion(output, label)
             loss_triplet += loss.item()
-            _, prediction = torch.max(output.data, 1)
+            _, predictions = torch.max(output.data, 1)
             # measure accuracy and record loss
             correct += (predictions == label.data).sum()
             total += data.size()[0]

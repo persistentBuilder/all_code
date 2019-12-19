@@ -20,7 +20,7 @@ class simpleNet(nn.Module):
         self.conv3_drop = nn.Dropout2d(p=0.2)
 
         # fully connected layers
-        self.fc1 = nn.Linear(9600, 300)
+        self.fc1 = nn.Linear(86400, 300)
         self.fc1_bn = nn.BatchNorm1d(300)
         self.fc1_drop = nn.Dropout(p=0.3)
 
