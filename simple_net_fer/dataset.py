@@ -11,6 +11,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import random
 import cv2
+from mtcnn import MTCNN
+
 
 class CohnKanadeDataLoad(Dataset):
 
@@ -28,6 +30,7 @@ class CohnKanadeDataLoad(Dataset):
         self.gt = []
         self.num_classes = 8 if self.include_neutral else 7
         self.test_flag = not train_flag
+        self.face_detector = MTCNN()
 
         distinct_persons = set()
         for line in self.all_lines:
@@ -48,11 +51,13 @@ class CohnKanadeDataLoad(Dataset):
                 if not include_neutral and seq_num == 1:
                     cnt = cnt + 1
                     continue
-
-                img = self.get_image_from_path(line)
-                self.imgs.append(img)
-                ground_truth = self.get_gt_from_path(line, seq_num)
-                self.gt.append(ground_truth)
+                try:
+                    img = self.resize_face_image(self.get_image_from_path(line))
+                    self.imgs.append(img)
+                    ground_truth = self.get_gt_from_path(line, seq_num)
+                    self.gt.append(ground_truth)
+                except:
+                    continue
             cnt = cnt + 1
         f.close()
 
@@ -73,10 +78,17 @@ class CohnKanadeDataLoad(Dataset):
             cnt = cnt + 1
         return train_set, test_set
 
+    def get_face_from_img(self, img):
+        results = self.face_detector.detect_faces(img)
+        x1, y1, width, height = results[0]['box']
+        x2, y2 = x1 + width, y1 + height
+        face_img = img[y1:y2, x1:x2]
+        return face_img
+
     def get_image_from_path(self, path):
         #img = Image.open(path)
-        img = cv2.imread(path)
-        return img
+        face_img = self.get_face_from_img(cv2.imread(path))
+        return face_img
 
     def get_gt_from_path(self, path, seq_num):
         if seq_num == 1:
@@ -93,7 +105,7 @@ class CohnKanadeDataLoad(Dataset):
 
     def __getitem__(self, index):
 
-        img = self.resize_face_image(self.imgs[index])
+        img = self.imgs[index]
         if self.transform:
             img = self.transform(img)
         #label = self.to_categorical(self.gt[index]-1)

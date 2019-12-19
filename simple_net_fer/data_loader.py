@@ -10,17 +10,18 @@ from dataset import CohnKanadeDataLoad
 
 
 class CKPLUS(object):
-    def __init__(self, batch_size, use_gpu, num_workers):
-        transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.ToTensor()
-        ])
+    def __init__(self, batch_size, use_gpu, num_workers, include_neutral=False, transform=None):
+        if transform is None:
+            transform = transforms.Compose([
+                transforms.ToPILImage(),
+                transforms.ToTensor()
+            ])
 
         pin_memory = True if use_gpu else False
 
         path_file = "relevant_images_paths.txt"
-        trainset = CohnKanadeDataLoad(path_file=path_file, train_flag=True, include_neutral=False, transform=transform)
-        testset = CohnKanadeDataLoad(path_file=path_file, train_flag=False, include_neutral=False, transform=transform)
+        trainset = CohnKanadeDataLoad(path_file=path_file, train_flag=True, include_neutral=include_neutral, transform=transform)
+        testset = CohnKanadeDataLoad(path_file=path_file, train_flag=False, include_neutral=include_neutral, transform=transform)
 
         trainloader = torch.utils.data.DataLoader(
             trainset, batch_size=batch_size, shuffle=True,
@@ -48,7 +49,7 @@ __factory = {
 }
 
 
-def create(name, batch_size, use_gpu, num_workers):
+def create(name, batch_size, use_gpu, num_workers, include_neutral=False, transform=None):
     if name not in __factory.keys():
         raise KeyError("Unknown dataset: {}".format(name))
-    return __factory[name](batch_size, use_gpu, num_workers)
+    return __factory[name](batch_size, use_gpu, num_workers, include_neutral=include_neutral, transform=transform)
