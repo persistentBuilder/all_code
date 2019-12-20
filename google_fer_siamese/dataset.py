@@ -97,7 +97,8 @@ class SiameseGoogleFer(Dataset):
     def check_valid_comb(self, line_components, face_image_1, face_image_2, face_image_3):
         strong_flag, annotation = self.check_strong_annotation(line_components)
         any_face_image_is_none = (face_image_1 is None) or (face_image_2 is None) or (face_image_3 is None)
-
+        if any_face_image_is_none:
+            return False
         face_detect = self.check_if_single_face_present(face_image_1) and \
                       self.check_if_single_face_present(face_image_2) and \
                       self.check_if_single_face_present(face_image_3)
