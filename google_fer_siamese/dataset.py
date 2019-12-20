@@ -95,7 +95,10 @@ class SiameseGoogleFer(Dataset):
                 face_image = self.resize_face_image(self.select_face_region(img, line_components[i*5+1:(i+1)*5],
                                                                             img.shape[0], img.shape[1]))
                 face_images.append(face_image)
-                cv2.imwrite(self.get_path(url_for_image[i], line_num), face_image)
+                try:
+                    cv2.imwrite(self.get_path(url_for_image[i], line_num), face_image)
+                except:
+                    raise("error couldn't write")
         return face_images[0], face_images[1], face_images[2]
 
     def check_valid_comb(self, line_components, face_image_1, face_image_2, face_image_3):
