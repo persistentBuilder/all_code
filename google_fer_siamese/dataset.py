@@ -5,6 +5,7 @@ import requests
 import torch
 import cv2
 from torchvision import transforms
+from mtcnn import MTCNN
 
 
 class SiameseGoogleFer(Dataset):
@@ -36,6 +37,7 @@ class SiameseGoogleFer(Dataset):
         self.image_resize_height = 224
         self.image_resize_width = 224
         self.transform = transform
+        self.face_detector = MTCNN()
 
         self.g = open(failed_path, "w")
         line_num = 0
@@ -45,15 +47,9 @@ class SiameseGoogleFer(Dataset):
             line_components = line.split(",")
             face_image_1, face_image_2, face_image_3 = self.get_face_images(line_components, line_num)
 
-            strong_flag, annotation = self.check_strong_annotation(line_components)
-            any_face_image_is_none = (face_image_1 is None) or (face_image_2 is None) or (face_image_3 is None)
-            if (not strong_flag) or any_face_image_is_none:
+            if not self.check_valid_comb(line_components, face_image_1, face_image_2, face_image_3):
                 continue
-            #to do detect face
-            #if not (self.detect_face(face_image_1) and self.detect_face(face_image_2)
-            #        and self.detect_face(face_image_3)):
-            #    continue
-            #print(line)
+
             if self.load_in_memory:
                 face_image_1, face_image_2, face_image_3 = self.shuffle_based_on_annotations(annotation, face_image_1,
                                                                                              face_image_2, face_image_3)
@@ -97,6 +93,22 @@ class SiameseGoogleFer(Dataset):
                 face_images.append(face_image)
                 cv2.imwrite(self.get_path(url_for_image[i], line_num), face_image)
         return face_images[0], face_images[1], face_images[2]
+
+    def check_valid_comb(self, line_components, face_image_1, face_image_2, face_image_3):
+        strong_flag, annotation = self.check_strong_annotation(line_components)
+        any_face_image_is_none = (face_image_1 is None) or (face_image_2 is None) or (face_image_3 is None)
+
+        face_detect = self.check_if_single_face_present(face_image_1) and \
+                      self.check_if_single_face_present(face_image_2) and \
+                      self.check_if_single_face_present(face_image_3)
+
+        if (not strong_flag) or any_face_image_is_none or (not face_detect):
+            return False
+        return True
+
+    def check_if_single_face_present(self, img):
+        results = self.face_detector.detect_faces(img)
+        return len(results) == 1
 
     def shuffle_based_on_annotations(self, annotation, face_image_1, face_image_2, face_image_3):
         if annotation == 1:
