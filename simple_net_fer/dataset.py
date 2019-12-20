@@ -44,7 +44,7 @@ class CohnKanadeDataLoad(Dataset):
         for line in self.all_lines:
             line = line[:-1]
             base = '/home/aryaman.g/projects/FER/dataset/'
-            line = base+line.split("/", 5)[-1]
+            line = base + line.split("/", 5)[-1]
             person_set = line.rsplit("/", 1)[-1].split("_")[0]
             if (self.train_flag and person_set in train_set) or (self.test_flag and person_set in test_set):
                 seq_num = int(line.rsplit("/",1)[-1].rsplit("_",1)[-1].split(".")[0])

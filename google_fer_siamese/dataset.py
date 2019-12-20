@@ -46,7 +46,8 @@ class SiameseGoogleFer(Dataset):
             face_image_1, face_image_2, face_image_3 = self.get_face_images(line_components, line_num)
 
             strong_flag, annotation = self.check_strong_annotation(line_components)
-            if (not strong_flag) or (face_image_1 is None):
+            any_face_image_is_none = (face_image_1 is None) or (face_image_2 is None) or (face_image_3 is None)
+            if (not strong_flag) or any_face_image_is_none:
                 continue
             #to do detect face
             #if not (self.detect_face(face_image_1) and self.detect_face(face_image_2)
