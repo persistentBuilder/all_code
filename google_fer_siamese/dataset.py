@@ -77,6 +77,10 @@ class SiameseGoogleFer(Dataset):
         except:
             return None, None, None
 
+        for img in imgs:
+            if img is None:
+                return None, None, None
+
         imgs_are_face_imgs = True
         for img in imgs:
             imgs_are_face_imgs = imgs_are_face_imgs and img.shape[0] == self.image_resize_height and \
