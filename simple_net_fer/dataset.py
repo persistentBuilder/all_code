@@ -120,6 +120,8 @@ class CohnKanadeDataLoad(Dataset):
     def __getitem__(self, index):
 
         img = self.imgs[index]
+        if self.read_heatmap:
+            img = torch.Tensor(img)
         if self.transform:
             img = self.transform(img)
         #label = self.to_categorical(self.gt[index]-1)
