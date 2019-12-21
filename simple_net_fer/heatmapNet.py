@@ -44,7 +44,7 @@ class heatmapNet(nn.Module):
         #x = F.relu(self.fc1_drop((self.fc1(x))))
         x = F.relu(self.fc1_drop(self.fc1_bn(self.fc1(x))))
         #x = F.relu(self.fc2_drop((self.fc2(x))))
-        x = F.relu(self.fc2_drop(self.fc2_bn(self.fc2(x))))
+        #x = F.relu(self.fc2_drop(self.fc2_bn(self.fc2(x))))
         if self.ret_embedding:
             return x
         x = (self.fc3_drop(self.fc3(x)))

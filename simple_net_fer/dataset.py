@@ -17,7 +17,7 @@ from numpy import load
 
 class CohnKanadeDataLoad(Dataset):
 
-    def __init__(self, path_file, train_flag=True, include_neutral=False, read_heatmap=True, transform=None, combine=True):
+    def __init__(self, path_file, train_flag=True, include_neutral=False, read_heatmap=True, transform=None, combine=False):
 
         f = open(path_file, "r")
         self.all_lines = f.readlines()
@@ -58,6 +58,7 @@ class CohnKanadeDataLoad(Dataset):
                 ground_truth = self.get_gt_from_path(line, seq_num)
 
                 if self.combine:
+                    heatmap_path = "heatmaps/" + line.rsplit("/",1)[-1].split(".")[0] + '.npy'
                     heatmap = self.read_saved_heatmap(heatmap_path)
                     img = self.resize_face_image(self.get_image_from_path(line))
                     self.imgs.append([heatmap, img])
