@@ -35,7 +35,7 @@ class CohnKanadeDataLoad(Dataset):
         self.read_heatmap = read_heatmap
         self.combine = combine
         if self.read_heatmap:
-            self.image_resize_widt = 64
+            self.image_resize_width = 64
             self.image_resize_height = 64
 
         distinct_persons = set()
