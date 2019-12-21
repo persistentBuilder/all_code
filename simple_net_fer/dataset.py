@@ -34,6 +34,9 @@ class CohnKanadeDataLoad(Dataset):
         self.face_detector = MTCNN()
         self.read_heatmap = read_heatmap
         self.combine = combine
+        if self.read_heatmap:
+            self.image_resize_widt = 64
+            self.image_resize_height = 64
 
         distinct_persons = set()
         for line in self.all_lines:
@@ -66,9 +69,10 @@ class CohnKanadeDataLoad(Dataset):
                 elif self.read_heatmap:
                     heatmap_path = "heatmaps/" + line.rsplit("/",1)[-1].split(".")[0] + '.npy'
                     heatmap = self.read_saved_heatmap(heatmap_path)
-                    self.imgs.append(heatmap)
+                    img = self.resize_face_image(self.get_image_from_path(line, without_face_crop=True))/255
+                    heatmap_and_img = np.concatenate((heatmap, img), axis=2)
+                    self.imgs.append(heatmap_and_img)
                     self.gt.append(ground_truth)
-
                 else:
                     try:
                         img = self.resize_face_image(self.get_image_from_path(line))
@@ -106,8 +110,10 @@ class CohnKanadeDataLoad(Dataset):
         face_img = img[y1:y2, x1:x2]
         return face_img
 
-    def get_image_from_path(self, path):
+    def get_image_from_path(self, path, without_face_crop=False):
         #img = Image.open(path)
+        if without_face_crop:
+            return cv2.imread(path)
         face_img = self.get_face_from_img(cv2.imread(path))
         return face_img
 
