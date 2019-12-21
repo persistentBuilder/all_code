@@ -13,7 +13,7 @@ class CKPLUS(object):
     def __init__(self, batch_size, use_gpu, num_workers, include_neutral=False, transform=None):
         if transform is None:
             transform = transforms.Compose([
-                transforms.ToPILImage(),
+                #transforms.ToPILImage(),
                 transforms.ToTensor()
             ])
 
