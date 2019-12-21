@@ -6,8 +6,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class heatmapNet(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, compute_embedding=False):
         super(heatmapNet, self).__init__()
+        self.ret_embedding = compute_embedding
+
         #conv layers
         self.num_classes = num_classes
         self.conv1 = nn.Conv2d(5, 50, kernel_size=5)
@@ -43,6 +45,8 @@ class heatmapNet(nn.Module):
         x = F.relu(self.fc1_drop(self.fc1_bn(self.fc1(x))))
         #x = F.relu(self.fc2_drop((self.fc2(x))))
         x = F.relu(self.fc2_drop(self.fc2_bn(self.fc2(x))))
+        if self.ret_embedding:
+            return x
         x = (self.fc3_drop(self.fc3(x)))
         return x
 

@@ -8,6 +8,7 @@ import argparse
 from model import simpleNet
 from extendNet import extendNet
 from heatmapNet import heatmapNet
+from combineNet import combineNet
 import random
 import time
 
@@ -42,6 +43,8 @@ def main():
         model = simpleNet(num_classes)
     elif args.net == 'heatmapNet':
         model = heatmapNet(num_classes)
+    elif args.net == 'combineNet':
+        model = combineNet(num_classes)
     else:
         model = extendNet(num_classes)        
 

@@ -6,9 +6,10 @@ from densenet import *
 
 
 class extendNet(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, compute_embedding=False):
         super(extendNet, self).__init__()
         self.num_classes = num_classes
+        self.ret_embedding = compute_embedding
         comp_resnet_pretrained = InceptionResnetV1(pretrained='vggface2')
         modules = list(comp_resnet_pretrained.children())[:-8]
         self.resnet = nn.Sequential(*modules)
@@ -25,6 +26,8 @@ class extendNet(nn.Module):
     def forward(self, x):
         x = self.resnet(x)
         x = self.dense_drop(self.densenet(x))
+        if self.ret_embedding:
+            return x
         x = self.fc1_drop(self.fc1(x))
         #x = F.normalize(x, p=2, dim=1)
         return x
