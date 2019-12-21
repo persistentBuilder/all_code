@@ -12,11 +12,12 @@ from torchvision import transforms, utils
 import random
 import cv2
 from mtcnn import MTCNN
+from numpy import load
 
 
 class CohnKanadeDataLoad(Dataset):
 
-    def __init__(self, path_file, train_flag=True, include_neutral=False, transform=None):
+    def __init__(self, path_file, train_flag=True, include_neutral=False, read_heatmap=True, transform=None):
 
         f = open(path_file, "r")
         self.all_lines = f.readlines()
@@ -31,6 +32,7 @@ class CohnKanadeDataLoad(Dataset):
         self.num_classes = 8 if self.include_neutral else 7
         self.test_flag = not train_flag
         self.face_detector = MTCNN()
+        self.read_heatmap = read_heatmap
 
         distinct_persons = set()
         for line in self.all_lines:
@@ -51,15 +53,27 @@ class CohnKanadeDataLoad(Dataset):
                 if not include_neutral and seq_num == 1:
                     cnt = cnt + 1
                     continue
-                try:
-                    img = self.resize_face_image(self.get_image_from_path(line))
-                    self.imgs.append(img)
-                    ground_truth = self.get_gt_from_path(line, seq_num)
+
+                ground_truth = self.get_gt_from_path(line, seq_num)
+
+                if self.read_heatmap:
+                    heatmap_path = "heatmaps/" + line.rsplit("/",1)[-1].split(".")[0] + '.npy'
+                    heatmap = self.read_saved_heatmap(heatmap_path)
+                    self.imgs.append(heatmap)
                     self.gt.append(ground_truth)
-                except:
-                    continue
+
+                else:
+                    try:
+                        img = self.resize_face_image(self.get_image_from_path(line))
+                        self.imgs.append(img)
+                        self.gt.append(ground_truth)
+                    except:
+                        continue
             cnt = cnt + 1
         f.close()
+
+    def read_saved_heatmap(self, heatmap_path):
+        return load(heatmap_path)
 
     def resize_face_image(self, img):
         return cv2.resize(img, (self.image_resize_width, self.image_resize_height), interpolation=cv2.INTER_CUBIC)
