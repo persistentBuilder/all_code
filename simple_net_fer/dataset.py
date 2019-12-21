@@ -71,7 +71,7 @@ class CohnKanadeDataLoad(Dataset):
                     heatmap = self.read_saved_heatmap(heatmap_path)
                     img = self.resize_face_image(self.get_image_from_path(line, without_face_crop=True))/255
                     img = np.stack([img[:, :, 0], img[:, :, 1], img[:, :, 2]], axis=0)
-                    heatmap_and_img = np.concatenate((heatmap, img), axis=2)
+                    heatmap_and_img = np.concatenate((heatmap, img), axis=0)
                     self.imgs.append(heatmap_and_img)
                     self.gt.append(ground_truth)
                 else:
