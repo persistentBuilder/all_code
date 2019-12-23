@@ -96,13 +96,24 @@ def train(train_loader, model, criterion, optimizer, epoch):
     # switch to train mode
     model.train()
     for batch_idx, (data, label) in enumerate(train_loader):
-        if args.cuda:
-            data = data.cuda()
-            label = label.cuda()
 
-        data = Variable(data)
+        if isinstance(data, list):
+            imgs, heatmaps = data
+            if args.cuda:
+                imgs = imgs.cuda()
+                heatmaps = heatmaps.cuda()
+            imgs = Variable(imgs)
+            heatmaps = Variable(heatmaps)
+            output = model(imgs, heatmaps)
+        else:
+            if args.cuda:
+                data = data.cuda()
+                label = label.cuda()
+
+            data = Variable(data)
+            output = model(data)
+
         # compute output
-        output = model(data)
         loss = criterion(output, label)
         _, predictions = torch.max(output.data, 1)
         loss_triplet += loss.item()

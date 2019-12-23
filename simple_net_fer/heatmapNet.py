@@ -12,7 +12,7 @@ class heatmapNet(nn.Module):
 
         #conv layers
         self.num_classes = num_classes
-        self.conv1 = nn.Conv2d(8, 50, kernel_size=5)
+        self.conv1 = nn.Conv2d(5, 50, kernel_size=5)
         self.conv1_bn = nn.BatchNorm2d(50)
         self.conv1_drop = nn.Dropout2d(p=0.1)
 
