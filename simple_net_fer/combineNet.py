@@ -21,7 +21,7 @@ class combineNet(nn.Module):
     def forward(self, x, y):
         img_embedding = self.extend_net(x)
         heatmap_embedding = self.heatmap_net(y)
-        out = torch.concat([img_embedding, heatmap_embedding], dim=1)
+        out = torch.cat([img_embedding, heatmap_embedding], dim=1)
         out = self.fc1_drop(self.fc1(out))
         return out
 
