@@ -101,6 +101,7 @@ class CohnKanadeDataLoad(Dataset):
 
     def get_train_and_test_set(self, distinct_persons, test_set_ratio=0.1):
         total_persons = len(distinct_persons)
+        print("total distinct sets: ", total_persons)
         train_length = int(total_persons * (1 - test_set_ratio))
         train_set = []
         test_set = []
