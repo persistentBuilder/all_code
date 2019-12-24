@@ -70,6 +70,8 @@ class CohnKanadeDataLoad(Dataset):
                     try:
                         heatmap = self.read_saved_heatmap(heatmap_path)
                         img = self.resize_face_image(self.get_image_from_path(line))
+                        if self.transform:
+                            img = self.transform(img)
                         self.imgs.append([img, heatmap])
                         self.gt.append(ground_truth)
                     except:
@@ -143,7 +145,7 @@ class CohnKanadeDataLoad(Dataset):
         img = self.imgs[index]
         if self.read_heatmap:
             img = torch.Tensor(img)
-        if self.transform:
+        if self.transform and not self.combine and not self.read_heatmap:
             img = self.transform(img)
         #label = self.to_categorical(self.gt[index]-1)
         return img, self.gt[index]-1

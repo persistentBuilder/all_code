@@ -16,7 +16,7 @@ class CKPLUS(object):
                 transforms.ToPILImage(),
                 transforms.ToTensor()
             ])
-        transform=None
+        #transform=None
 
         pin_memory = True if use_gpu else False
 
