@@ -143,7 +143,7 @@ class CohnKanadeDataLoad(Dataset):
     def __getitem__(self, index):
 
         img = self.imgs[index]
-        if self.read_heatmap:
+        if self.read_heatmap and not self.combine:
             img = torch.Tensor(img)
         if self.transform and not self.combine and not self.read_heatmap:
             img = self.transform(img)
