@@ -9,4 +9,4 @@ source ~/packages/keras_tf_venv3/bin/activate
 module load cuda/10.0
 #module load cudnn/7-cuda-10.0
 
-python main.py --epochs=1300 --lr=0.000001 --net="heatmapNet"
+python main.py --epochs=300 --lr=0.0001 --net="combineNet"
