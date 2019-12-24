@@ -15,7 +15,7 @@ class combineNet(nn.Module):
         self.heatmap_net = heatmapNet(self.num_classes, compute_embedding=True)
         self.extend_net = extendNet(self.num_classes, compute_embedding=True)
         self.dense_drop = nn.Dropout(p=0.5)
-        self.fc1 = nn.Linear(288, self.num_classes)
+        self.fc1 = nn.Linear(588, self.num_classes)
         self.fc1_drop = nn.Dropout(p=0.4)
 
     def forward(self, x, y):

@@ -67,10 +67,13 @@ class CohnKanadeDataLoad(Dataset):
                 heatmap_path = "heatmaps/" + line.rsplit("/", 1)[-1].split(".")[0] + '.npy'
 
                 if self.combine:
-                    heatmap = self.read_saved_heatmap(heatmap_path)
-                    img = self.resize_face_image(self.get_image_from_path(line))
-                    self.imgs.append([heatmap, img])
-                    self.gt.append(ground_truth)
+                    try:
+                        heatmap = self.read_saved_heatmap(heatmap_path)
+                        img = self.resize_face_image(self.get_image_from_path(line))
+                        self.imgs.append([img, heatmap])
+                        self.gt.append(ground_truth)
+                    except:
+                        continue
                 elif self.read_heatmap:
                     heatmap = self.read_saved_heatmap(heatmap_path)
                     img = self.resize_face_image(self.get_image_from_path(line, without_face_crop=True))/255

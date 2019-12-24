@@ -100,11 +100,13 @@ def train(train_loader, model, criterion, optimizer, epoch):
         if isinstance(data, list):
             imgs, heatmaps = data
             if args.cuda:
+                label = label.cuda()
                 imgs = imgs.cuda()
                 heatmaps = heatmaps.cuda()
             imgs = Variable(imgs)
             heatmaps = Variable(heatmaps)
             output = model(imgs, heatmaps)
+            total += imgs.size()[0]
         else:
             if args.cuda:
                 data = data.cuda()
@@ -112,13 +114,13 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
             data = Variable(data)
             output = model(data)
+            total += data.size()[0]
 
         # compute output
         loss = criterion(output, label)
         _, predictions = torch.max(output.data, 1)
         loss_triplet += loss.item()
         correct += (predictions == label.data).sum().item()
-        total += data.size()[0]
 
         # compute gradient and do optimizer step
         optimizer.zero_grad()
@@ -140,21 +142,30 @@ def test(test_loader, model, criterion, epoch):
     model.eval()
     with torch.no_grad():
         for batch_idx, (data, label) in enumerate(test_loader):
-            if args.cuda:
-                label = label.cuda()
-                data = data.cuda()
+            if isinstance(data, list):
+                imgs, heatmaps = data
+                if args.cuda:
+                    label = label.cuda()
+                    imgs = imgs.cuda()
+                    heatmaps = heatmaps.cuda()
+                imgs = Variable(imgs)
+                heatmaps = Variable(heatmaps)
+                output = model(imgs, heatmaps)
+                total += imgs.size()[0]
+            else:
+                if args.cuda:
+                    data = data.cuda()
+                    label = label.cuda()
 
-            data = Variable(data)
-
-            # compute output
-            output = model(data)
+                data = Variable(data)
+                output = model(data)
+                total += data.size()[0]
 
             loss = criterion(output, label)
             loss_triplet += loss.item()
             _, predictions = torch.max(output.data, 1)
             # measure accuracy and record loss
             correct += (predictions == label.data).sum().item()
-            total += data.size()[0]
 
     acc = correct * 100. / total
     print("test accuracy after ", epoch, " epoch: ", acc)
