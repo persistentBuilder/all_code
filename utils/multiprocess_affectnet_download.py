@@ -1,9 +1,6 @@
 import time
-from torchvision import datasets, transforms
 #!/usr/bin/env python
 import os
-import torch
-import torch.distributed as dist
 from multiprocessing import Process
 import argparse
 import urllib.request
