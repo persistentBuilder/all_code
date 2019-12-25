@@ -27,9 +27,9 @@ class SiameseGoogleFer(Dataset):
         self.current_lines = self.get_lines(current_division)
 
         if self.train_flag:
-            failed_path = "data2/failed_read_train.txt"
+            failed_path = "data/failed_read_train.txt"
         else:
-            failed_path = "data2/failed_read_test.txt"
+            failed_path = "data/failed_read_test.txt"
 
         print(len(self.current_lines))
         self.all_triplets = []
@@ -51,6 +51,8 @@ class SiameseGoogleFer(Dataset):
                 continue
 
             if self.load_in_memory:
+                strong_flag, annotation = self.check_strong_annotation(line_components)
+
                 face_image_1, face_image_2, face_image_3 = self.shuffle_based_on_annotations(annotation, face_image_1,
                                                                                              face_image_2, face_image_3)
                 self.triplets.append([face_image_1, face_image_2, face_image_3])
@@ -179,7 +181,7 @@ class SiameseGoogleFer(Dataset):
     def get_path(self, url, line_num):
         image_name = url.split("/")[-1]
         line_str = str(line_num).zfill(8) + "_"
-        base_path = "data2/images/"
+        base_path = "data/images/"
         if self.train_flag:
             base_directory = base_path + "train/"
         else:
@@ -203,9 +205,6 @@ class SiameseGoogleFer(Dataset):
 
     def resize_face_image(self, img):
         return cv2.resize(img, (self.image_resize_width, self.image_resize_height), interpolation=cv2.INTER_CUBIC)
-
-    def detect_face(self, img):
-        pass
 
     def __getitem__(self, index):
         if self.load_in_memory:
