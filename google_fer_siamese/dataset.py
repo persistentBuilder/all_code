@@ -15,7 +15,7 @@ class SiameseGoogleFer(Dataset):
     """
 
     def __init__(self, path, train_flag=True, transform=None, write_only_face=True, divisions=1, current_division=0,
-                 load_in_memory=True):
+                 load_in_memory=True, for_writing_data=False):
 
         self.f = open(path, "r")
         self.train_flag = train_flag
@@ -24,7 +24,7 @@ class SiameseGoogleFer(Dataset):
         self.divisions = divisions
         self.load_in_memory = load_in_memory
 
-        self.current_lines = self.get_lines(current_division)
+        self.current_lines = self.get_lines(current_division, for_writing_data=for_writing_data)
 
         if self.train_flag:
             failed_path = "data/failed_read_train.txt"
@@ -60,11 +60,17 @@ class SiameseGoogleFer(Dataset):
         self.f.close()
         self.g.close()
 
-    def get_lines(self, current_division):
+    def get_lines(self, current_division, for_writing_data=False):
         l = len(self.all_lines)
-        start = int((l/self.divisions)*current_division)
-        end = int((l/self.divisions)*(current_division+1)) if current_division < self.divisions - 1 else l 
-        return self.all_lines[start:end]
+        if not for_writing_data:
+            start = int((l/self.divisions)*current_division)
+            end = int((l/self.divisions)*(current_division+1)) if current_division < self.divisions - 1 else l
+            return self.all_lines[start:end]
+        else:
+            lines = []
+            for i in range(0+current_division, l, self.divisions):
+                lines.append(self.all_lines[i])
+            return lines
 
     def get_face_images(self, line_components, line_num):
 

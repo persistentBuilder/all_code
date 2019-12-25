@@ -14,7 +14,7 @@ def run(rank, size):
 
 def fetch_dataset(current_division, divisions, path, train_flag):
     x = SiameseGoogleFer(path=path, train_flag=train_flag, transform=transform,  divisions=divisions,
-                         current_division=current_division, load_in_memory=False)
+                         current_division=current_division, load_in_memory=False, for_writing_data=True)
 
 
 if __name__ == "__main__":
