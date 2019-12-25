@@ -16,10 +16,10 @@ def fetchFiles(pathToFolder, flag, keyWord):
 
 	returns: _pathToFiles and _fileNames '''
 
-	_pathToFiles = []
-	_fileNames = []
+    _pathToFiles = []
+    _fileNames = []
 
-	for dirPath, dirNames, fileNames in os.walk(pathToFolder):
+    for dirPath, dirNames, fileNames in os.walk(pathToFolder):
         if flag == 'ENDS_WITH':
             selectedPath = [os.path.join(dirPath, item) for item in fileNames if item.endswith(keyWord)]
             _pathToFiles.extend(selectedPath)
