@@ -1,4 +1,3 @@
-from dataset import SiameseGoogleFer
 import time
 from torchvision import datasets, transforms
 #!/usr/bin/env python
@@ -16,15 +15,16 @@ def run(rank, size):
 
 def fetch_dataset(url, save_name, save_path=""):
     dest = save_path + save_name
+    print(dest)
     urllib.request.urlretrieve(url, dest)
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser("Parallel download dataset")
-    parser.add_argument('--save_path', type=str, default="/Users/aryaman/research/FER_datasets/affectNet ")
+    parser.add_argument('--save_path', type=str, default="/Users/aryaman/research/FER_datasets/affectNet/ ")
     # parser.add_argument('--divisions', type=int, default=50)
-    # args = parser.parse_args()
+    args = parser.parse_args()
     divisions = 11
     urls = []
     save_names = []
@@ -59,7 +59,8 @@ if __name__ == "__main__":
     processes = []
     for current_division in range(0, divisions):
         save_name = save_names[current_division]
-        p = Process(target=fetch_dataset, args=(urls[current_division], save_name))
+        save_path = args.save_path
+        p = Process(target=fetch_dataset, args=(urls[current_division], save_name, save_path))
         p.start()
         processes.append(p)
 

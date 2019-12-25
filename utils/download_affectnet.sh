@@ -8,4 +8,4 @@
 source ~/packages/keras_tf_venv3/bin/activate
 mkdir -p /ssd_scratch/cvit/aryaman.g/
 mkdir -p /ssd_scratch/cvit/aryaman.g/affectnet
-python multiprocess_affectnet_download --save_path="/ssd_scratch/cvit/aryaman.g/affectnet/"
+python multiprocess_affectnet_download.py --save_path="/ssd_scratch/cvit/aryaman.g/affectnet/"
