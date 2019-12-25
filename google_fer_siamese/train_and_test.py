@@ -151,6 +151,7 @@ def train(train_loader, tnet, criterion, optimizer, epoch):
     acc = correct * 100. / total
     if epoch % 5 == 0:
         print("train accuracy after ", epoch, " epoch: ", acc)
+        print("train samples :", total)
 
 
 def test(test_loader, tnet, criterion, epoch):
@@ -180,6 +181,7 @@ def test(test_loader, tnet, criterion, epoch):
 
     acc = correct * 100. / total
     print("test accuracy after ", epoch, " epoch: ", acc)
+    print("test samples :", total)
     return acc
 
 
