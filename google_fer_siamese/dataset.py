@@ -27,9 +27,9 @@ class SiameseGoogleFer(Dataset):
         self.current_lines = self.get_lines(current_division, for_writing_data=for_writing_data)
 
         if self.train_flag:
-            failed_path = "data/failed_read_train.txt"
+            failed_path = "data3/failed_read_train.txt"
         else:
-            failed_path = "data/failed_read_test.txt"
+            failed_path = "data3/failed_read_test.txt"
 
         print(len(self.current_lines))
         self.all_triplets = []
@@ -187,7 +187,7 @@ class SiameseGoogleFer(Dataset):
     def get_path(self, url, line_num):
         image_name = url.split("/")[-1]
         line_str = str(line_num).zfill(8) + "_"
-        base_path = "data/images/"
+        base_path = "data3/images/"
         if self.train_flag:
             base_directory = base_path + "train/"
         else:
