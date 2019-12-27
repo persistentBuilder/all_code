@@ -13,6 +13,7 @@ import random
 import cv2
 from mtcnn import MTCNN
 from numpy import load
+from utils.AUmaps import AUdetector
 
 
 class CohnKanadeDataLoad(Dataset):
@@ -36,6 +37,7 @@ class CohnKanadeDataLoad(Dataset):
         self.read_heatmap = read_heatmap
         self.combine = combine
         self.ddp = divide_distinct_persons
+        self.heatmap_detector = AUdetector('utils/shape_predictor_68_face_landmarks.dat', enable_cuda=torch.cuda.is_available())
         if self.read_heatmap:
             self.image_resize_width = 64
             self.image_resize_height = 64
@@ -68,8 +70,8 @@ class CohnKanadeDataLoad(Dataset):
 
                 if self.combine:
                     try:
-                        heatmap = self.read_saved_heatmap(heatmap_path)
                         img = self.resize_face_image(self.get_image_from_path(line))
+                        heatmap = self.get_au_heatmap(img)
                         if self.transform:
                             img = self.transform(img)
                         self.imgs.append([img, heatmap])
@@ -92,6 +94,10 @@ class CohnKanadeDataLoad(Dataset):
                         continue
             cnt = cnt + 1
         f.close()
+
+    def get_au_heatmap(self, img):
+        dum, heatmap, dum_img = AUdetector.detectAU(img)
+        return heatmap
 
     def read_saved_heatmap(self, heatmap_path):
         return load(heatmap_path)
