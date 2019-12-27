@@ -7,10 +7,10 @@ import pickle
 import torchvision.transforms as transforms
 
 from dataset import CohnKanadeDataLoad
-
+from dataset import AffectNetDataset
 
 class CKPLUS(object):
-    def __init__(self, batch_size, use_gpu, num_workers, include_neutral=False, transform=None):
+    def __init__(self, batch_size, use_gpu, num_workers, include_neutral=False, transform=None, path=None):
         if transform is None:
             transform = transforms.Compose([
                 transforms.ToPILImage(),
@@ -41,6 +41,34 @@ class CKPLUS(object):
         self.testloader = testloader
         self.num_classes = trainset.num_classes
 
+
+class AFFECTNET(object):
+    def __init__(self, batch_size, use_gpu, num_workers, transform=None, include_neutral=False):
+        if transform is None:
+            transform = transforms.Compose([
+                transforms.ToPILImage(),
+                transforms.ToTensor()
+            ])
+        # transform=None
+
+        pin_memory = True if use_gpu else False
+
+        trainset = AffectNetDataset(path='training.csv', train_flag=True, transform=transform)
+        testset = AffectNetDataset(path='validation.csv', train_flag=False, transform=transform)
+
+        trainloader = torch.utils.data.DataLoader(
+            trainset, batch_size=batch_size, shuffle=True,
+            num_workers=num_workers, pin_memory=pin_memory,
+        )
+
+        testloader = torch.utils.data.DataLoader(
+            testset, batch_size=batch_size, shuffle=False,
+            num_workers=num_workers, pin_memory=pin_memory,
+        )
+
+        self.trainloader = trainloader
+        self.testloader = testloader
+        self.num_classes = trainset.num_classes
     # def __iter__(self):
     #     for i, data in enumerate(self.dataloader):
     #         if i * self.opt.batch_size >= self.opt.max_dataset_size:
@@ -49,6 +77,7 @@ class CKPLUS(object):
 
 __factory = {
     'ck+': CKPLUS,
+    'affectnet': AFFECTNET,
 }
 
 

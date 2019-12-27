@@ -17,6 +17,7 @@ parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--lr', type=float, default=0.0001, help="learning rate for model")
 parser.add_argument('--epochs', type=int, default=50)
 parser.add_argument('--include_neutral', type=bool, default=True)
+parser.add_argument('--dataset', type=str, default="ck+")
 parser.add_argument('--net', type=str, default="extendNet")
 parser.add_argument('--resume', default='', type=str,
                     help='path to latest checkpoint (default: none)')
@@ -30,12 +31,18 @@ def main():
     print("using gpu: ", args.cuda)
     batch_size = args.batch_size
     include_neutral = args.include_neutral
-    num_classes = 8 if include_neutral else 7
     num_workers = 1 if args.cuda else 0
     torch.backends.cudnn.enabled = False
-    dataset = create(name='ck+',batch_size=batch_size, use_gpu=args.cuda, num_workers=num_workers, include_neutral=include_neutral)
+    if args.dataset == "affectnet":
+        dataset = create(name=args.dataset, batch_size=batch_size, use_gpu=args.cuda, num_workers=num_workers)
+        num_classes = 11
+    else:
+        dataset = create(name=args.dataset, batch_size=batch_size, use_gpu=args.cuda, num_workers=num_workers)
+        num_classes = 8 if include_neutral else 7
+
     train_loader = dataset.trainloader
     test_loader = dataset.testloader
+
 
     if args.net == 'extendNet':
         model = extendNet(num_classes)

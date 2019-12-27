@@ -32,7 +32,7 @@ def fetch_dataset(url, save_name, save_path=""):
     # r = requests.get(url)
     # with open(dest, 'w') as f:
     #     f.write(r.text)
-    #urllib3.request.urlretrieve(url, dest)
+    #urllib.request.urlretrieve(url, dest)
     getfile(url, dest)
 
 if __name__ == "__main__":

@@ -11,10 +11,10 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import random
 import cv2
-from mtcnn import MTCNN
+#from mtcnn import MTCNN
 from numpy import load
-from utils.AUmaps import AUdetector
-
+import pandas as pd
+import time
 
 class CohnKanadeDataLoad(Dataset):
 
@@ -37,7 +37,7 @@ class CohnKanadeDataLoad(Dataset):
         self.read_heatmap = read_heatmap
         self.combine = combine
         self.ddp = divide_distinct_persons
-        self.heatmap_detector = AUdetector('utils/shape_predictor_68_face_landmarks.dat', enable_cuda=torch.cuda.is_available())
+        #self.heatmap_detector = AUdetector('utils/shape_predictor_68_face_landmarks.dat', enable_cuda=torch.cuda.is_available())
         if self.read_heatmap:
             self.image_resize_width = 64
             self.image_resize_height = 64
@@ -71,7 +71,7 @@ class CohnKanadeDataLoad(Dataset):
                 if self.combine:
                     try:
                         img = self.resize_face_image(self.get_image_from_path(line))
-                        heatmap = self.get_au_heatmap(img)
+                        heatmap = self.read_saved_heatmap(heatmap_path)
                         if self.transform:
                             img = self.transform(img)
                         self.imgs.append([img, heatmap])
@@ -162,3 +162,66 @@ class CohnKanadeDataLoad(Dataset):
 
     def to_categorical(self, y):
         return np.eye(self.num_classes, dtype='int')[y]
+
+
+class AffectNetDataset(Dataset):
+    def __init__(self, path, train_flag=True, base_path='/Users/aryaman/research/FER_datasets/affectNet',
+                 transform=None):
+
+        self.path_imgs = []
+        self.ground_truth = []
+        self.train_flag = train_flag
+        self.face_location = []
+        self.base_path = base_path
+        self.image_resize_height = 224
+        self.image_resize_width = 224
+        self.transform = transform
+
+        data = pd.read_csv(self.base_path + '/' + path)
+        all_file_pd_series = data['subDirectory_filePath'].apply(lambda x: x.split("/")[-1])
+        all_file_paths = list(all_file_pd_series)
+        set_of_path = set(all_file_paths)
+        all_face_locations = list([list(data['face_x']), list(data['face_y']), list(data['face_width']),
+                                   list(data['face_height'])])
+        all_face_locations = np.transpose(all_face_locations)
+        all_ground_truth = list(data['expression'])
+        lf = os.listdir(self.base_path)
+        useful_dir = []
+
+        for l in lf:
+            if len(l) >= 18 and l[:18] == "Manually_Annotated" and l[-6:-2] == "part":
+                useful_dir.append(l)
+
+        begin_time = time.time()
+        count=0
+        for dir_name in useful_dir:
+            dir_path = self.base_path + '/' + dir_name
+            images_list = os.listdir(dir_path)
+            for image in images_list:
+                if image in set_of_path:
+                    idx = all_file_pd_series[all_file_pd_series == image].index[0]
+                    self.path_imgs.append(dir_path + '/' + all_file_paths[idx])
+                    self.face_location.append(all_face_locations[idx])
+                    self.ground_truth.append(all_ground_truth[idx])
+                    count += 1
+                    if count % 1000 == 0:
+                        print(count, time.time()-begin_time)
+
+    def resize_face_image(self, img):
+        return cv2.resize(img, (self.image_resize_width, self.image_resize_height), interpolation=cv2.INTER_CUBIC)
+
+    def get_image_from_path(self, path, face_location):
+        x1, y1, width, height = face_location
+        x2, y2 = x1 + width, y1 + height
+        img = cv2.imread(path)
+        face_img = img[y1:y2, x1:x2]
+        return face_img
+
+    def __getitem__(self, index):
+        img = self.resize_face_image(self.get_image_from_path(self.path_imgs[index], self.face_location[index]))
+        if self.transform:
+            img = self.transform(img)
+        return img, self.ground_truth[index]
+
+    def __len__(self):
+        return len(self.path_imgs)
