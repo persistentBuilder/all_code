@@ -178,8 +178,10 @@ class AffectNetDataset(Dataset):
         self.transform = transform
 
         data = pd.read_csv(self.base_path + '/' + path)
-        all_file_pd_series = data['subDirectory_filePath'].apply(lambda x: x.split("/")[-1])
-        all_file_paths = list(all_file_pd_series)
+        data['subDirectory_filePath'] = data['subDirectory_filePath'].apply(lambda x: x.split("/")[-1])
+        data = data.sort_values(by=['subDirectory_filePath'])
+        all_file_pd_series = data['subDirectory_filePath']
+        all_file_paths = np.array(all_file_pd_series)
         set_of_path = set(all_file_paths)
         all_face_locations = list([list(data['face_x']), list(data['face_y']), list(data['face_width']),
                                    list(data['face_height'])])
@@ -193,19 +195,22 @@ class AffectNetDataset(Dataset):
                 useful_dir.append(l)
 
         begin_time = time.time()
+        series_search_time = 0
         count=0
         for dir_name in useful_dir:
             dir_path = self.base_path + '/' + dir_name
             images_list = os.listdir(dir_path)
             for image in images_list:
                 if image in set_of_path:
-                    idx = all_file_pd_series[all_file_pd_series == image].index[0]
+                    ss_begin = time.time()
+                    idx = np.searchsorted(all_file_paths, image)
+                    series_search_time += time.time()-ss_begin
                     self.path_imgs.append(dir_path + '/' + all_file_paths[idx])
                     self.face_location.append(all_face_locations[idx])
                     self.ground_truth.append(all_ground_truth[idx])
                     count += 1
                     if count % 1000 == 0:
-                        print(count, time.time()-begin_time)
+                        print(count, time.time()-begin_time, series_search_time)
 
     def resize_face_image(self, img):
         return cv2.resize(img, (self.image_resize_width, self.image_resize_height), interpolation=cv2.INTER_CUBIC)
