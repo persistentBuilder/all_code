@@ -3,13 +3,28 @@ import time
 import os
 from multiprocessing import Process
 import argparse
-import urllib3.request
+import urllib.request
 import requests
-
+import contextlib
 
 def run(rank, size):
     """ Distributed function to be implemented later. """
     pass
+
+def getfile(url,filename,timeout=45):
+    with contextlib.closing(urllib.request.urlopen(url,timeout=timeout)) as fp:
+        block_size = 1024 * 8
+        block = fp.read(block_size)
+        if block:
+            with open(filename,'wb') as out_file:
+                out_file.write(block)
+                while True:
+                    block = fp.read(block_size)
+                    if not block:
+                        break
+                    out_file.write(block)
+        else:
+            raise Exception ('nonexisting file or connection error')
 
 def fetch_dataset(url, save_name, save_path=""):
     dest = save_path + save_name
@@ -17,8 +32,8 @@ def fetch_dataset(url, save_name, save_path=""):
     # r = requests.get(url)
     # with open(dest, 'w') as f:
     #     f.write(r.text)
-    urllib3.request.urlretrieve(url, dest)
-
+    #urllib3.request.urlretrieve(url, dest)
+    getfile(url, dest)
 
 if __name__ == "__main__":
 
