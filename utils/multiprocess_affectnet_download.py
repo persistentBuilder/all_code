@@ -3,7 +3,7 @@ import time
 import os
 from multiprocessing import Process
 import argparse
-import urllib.request
+import urllib3.request
 import requests
 
 
@@ -14,10 +14,10 @@ def run(rank, size):
 def fetch_dataset(url, save_name, save_path=""):
     dest = save_path + save_name
     print(dest)
-    r = requests.get(url)
-    with open(dest, 'w') as f:
-        f.write(r.text)
-    #urllib.request.urlretrieve(url, dest)
+    # r = requests.get(url)
+    # with open(dest, 'w') as f:
+    #     f.write(r.text)
+    urllib3.request.urlretrieve(url, dest)
 
 
 if __name__ == "__main__":
