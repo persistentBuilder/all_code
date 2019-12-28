@@ -43,17 +43,11 @@ def main():
     train_loader = dataset.trainloader
     test_loader = dataset.testloader
 
-
-    if args.net == 'extendNet':
-        model = extendNet(num_classes)
-    elif args.net == 'simpleNet':
-        model = simpleNet(num_classes)
-    elif args.net == 'heatmapNet':
-        model = heatmapNet(num_classes)
-    elif args.net == 'combineNet':
-        model = combineNet(num_classes)
+    model_map = {'extendNet': extendNet, 'simpleNet': simpleNet, 'heatmapNet':heatmapNet, 'combineNet': combineNet}
+    if model_map[args.net] is not None:
+        model = model_map[args.net](num_classes)
     else:
-        model = extendNet(num_classes)        
+        raise("incorrect network selection")
 
     if args.cuda:
         model.cuda()
