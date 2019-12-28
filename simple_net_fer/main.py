@@ -35,7 +35,7 @@ def main():
     torch.backends.cudnn.enabled = False
     if args.dataset == "affectnet":
         dataset = create(name=args.dataset, batch_size=batch_size, use_gpu=args.cuda, num_workers=num_workers)
-        num_classes = 11
+        num_classes = 8
     else:
         dataset = create(name=args.dataset, batch_size=batch_size, use_gpu=args.cuda, num_workers=num_workers)
         num_classes = 8 if include_neutral else 7
