@@ -165,17 +165,20 @@ class CohnKanadeDataLoad(Dataset):
 
 
 class AffectNetDataset(Dataset):
-    def __init__(self, path, train_flag=True, base_path='/Users/aryaman/research/FER_datasets/affectNet',
-                 transform=None):
+    def __init__(self, path, train_flag=True, base_path='/ssd_scratch/cvit/aryaman.g/affectnet',
+                 transform=None, include_neutral=True):
 
         self.path_imgs = []
         self.ground_truth = []
         self.train_flag = train_flag
+        self.include_neutral = include_neutral
         self.face_location = []
         self.base_path = base_path
         self.image_resize_height = 224
         self.image_resize_width = 224
         self.transform = transform
+        self.num_classes = 8 if self.include_neutral else 7
+
 
         data = pd.read_csv(self.base_path + '/' + path)
         data['subDirectory_filePath'] = data['subDirectory_filePath'].apply(lambda x: x.split("/")[-1])
@@ -205,6 +208,8 @@ class AffectNetDataset(Dataset):
                     ss_begin = time.time()
                     idx = np.searchsorted(all_file_paths, image)
                     series_search_time += time.time()-ss_begin
+                    if all_face_locations[idx] >= 8:
+                        continue
                     self.path_imgs.append(dir_path + '/' + all_file_paths[idx])
                     self.face_location.append(all_face_locations[idx])
                     self.ground_truth.append(all_ground_truth[idx])

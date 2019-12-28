@@ -133,6 +133,8 @@ def train(train_loader, model, criterion, optimizer, epoch):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        if total > 10000:
+            break
 
     print("loss  after ", epoch, " epoch: ", loss_triplet)
     acc = correct * 100. / total
