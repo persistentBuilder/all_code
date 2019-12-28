@@ -208,7 +208,7 @@ class AffectNetDataset(Dataset):
                     ss_begin = time.time()
                     idx = np.searchsorted(all_file_paths, image)
                     series_search_time += time.time()-ss_begin
-                    if all_face_locations[idx] >= 8:
+                    if all_ground_truth[idx] >= 8:
                         continue
                     self.path_imgs.append(dir_path + '/' + all_file_paths[idx])
                     self.face_location.append(all_face_locations[idx])
