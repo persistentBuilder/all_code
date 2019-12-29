@@ -19,6 +19,7 @@ parser.add_argument('--epochs', type=int, default=50)
 parser.add_argument('--include_neutral', type=bool, default=True)
 parser.add_argument('--dataset', type=str, default="ck+")
 parser.add_argument('--net', type=str, default="extendNet")
+parser.add_argument('--save-checkpoint', type=int, default=0)
 parser.add_argument('--resume', default='', type=str,
                     help='path to latest checkpoint (default: none)')
 args = parser.parse_args()
@@ -26,7 +27,7 @@ args = parser.parse_args()
 
 def main():
     global args
-
+    best_acc = 0
     args.cuda = torch.cuda.is_available()
     print("using gpu: ", args.cuda)
     batch_size = args.batch_size
@@ -83,11 +84,15 @@ def main():
         print("\n")
 
         # remember best acc and save checkpoint
-        # save_checkpoint({
-        #     'epoch': epoch + 1,
-        #     'state_dict': model.state_dict(),
-        #     'best_prec1': best_acc,
-        # }, is_best)
+
+        if args.save_checkpoint > 0 and acc > best_acc and epoch>10:
+            best_acc = acc
+            save_checkpoint({
+                'epoch': epoch + 1,
+                'state_dict': model.state_dict(),
+                'best_prec1': best_acc,
+            }, is_best=True)
+
 
 
 def train(train_loader, model, criterion, optimizer, epoch):

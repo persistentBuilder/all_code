@@ -11,8 +11,11 @@ def get_faces_from_frame(img):
         face_images.append(img[d.top():d.bottom(), d.left(): d.right()])
     return face_images
 
-def load_model(model_path):
-    pass
+
+def load_model(model_path, model=None):
+    checkpoint = torch.load(model_path)
+    model.load_state_dict(checkpoint['state_dict'])
+    return model
 
 def strong_pred(output):
     pass
