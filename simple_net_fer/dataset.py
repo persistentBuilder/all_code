@@ -38,7 +38,7 @@ class CohnKanadeDataLoad(Dataset):
         self.read_heatmap = read_heatmap
         self.combine = combine
         self.ddp = divide_distinct_persons
-        #self.heatmap_detector = AUdetector('utils/shape_predictor_68_face_landmarks.dat', enable_cuda=torch.cuda.is_available())
+        self.heatmap_detector = AUdetector('shape_predictor_68_face_landmarks.dat', enable_cuda=torch.cuda.is_available())
         if self.read_heatmap:
             self.image_resize_width = 64
             self.image_resize_height = 64
@@ -179,7 +179,7 @@ class AffectNetDataset(Dataset):
         self.image_resize_width = 224
         self.transform = transform
         self.num_classes = 8 if self.include_neutral else 7
-        self.heatmap_detector = AUdetector('utils/shape_predictor_68_face_landmarks.dat', enable_cuda=torch.cuda.is_available())
+        self.heatmap_detector = AUdetector('shape_predictor_68_face_landmarks.dat', enable_cuda=torch.cuda.is_available())
         self.use_heatmap = use_heatmap
 
 
