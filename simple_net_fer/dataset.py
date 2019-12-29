@@ -15,6 +15,7 @@ import cv2
 from numpy import load
 import pandas as pd
 import time
+from AUmaps import *
 
 class CohnKanadeDataLoad(Dataset):
 
@@ -166,7 +167,7 @@ class CohnKanadeDataLoad(Dataset):
 
 class AffectNetDataset(Dataset):
     def __init__(self, path, train_flag=True, base_path='/ssd_scratch/cvit/aryaman.g/affectnet',
-                 transform=None, include_neutral=True):
+                 transform=None, include_neutral=True, use_heatmap=-1):
 
         self.path_imgs = []
         self.ground_truth = []
@@ -178,6 +179,8 @@ class AffectNetDataset(Dataset):
         self.image_resize_width = 224
         self.transform = transform
         self.num_classes = 8 if self.include_neutral else 7
+        self.heatmap_detector = AUdetector('utils/shape_predictor_68_face_landmarks.dat', enable_cuda=torch.cuda.is_available())
+        self.use_heatmap = use_heatmap
 
 
         data = pd.read_csv(self.base_path + '/' + path)
@@ -227,11 +230,30 @@ class AffectNetDataset(Dataset):
         face_img = img[y1:y2, x1:x2]
         return face_img
 
+    def get_au_heatmap(self, img):
+        dum, heatmap, dum_img = AUdetector.detectAU(img)
+        return heatmap
+
+    def get_heatmap_modified_image(self, heatmap, img):
+        modified_img = img
+        return modified_img
+
     def __getitem__(self, index):
         img = self.resize_face_image(self.get_image_from_path(self.path_imgs[index], self.face_location[index]))
         if self.transform:
             img = self.transform(img)
-        return img, self.ground_truth[index]
+        if self.use_heatmap == -1:
+            return img, self.ground_truth[index]
+        elif self.use_heatmap == 1:
+            heatmap = self.get_au_heatmap(img)
+            return heatmap, self.ground_truth[index]
+        elif self.use_heatmap == 2:
+            heatmap = self.get_au_heatmap(img)
+            return [img, heatmap], self.ground_truth[index]
+        elif self.use_heatmap == 3:
+            heatmap = self.get_au_heatmap(img)
+            mod_img = self.get_heatmap_modified_image(heatmap, img)
+            return mod_img, self.ground_truth[index]
 
     def __len__(self):
         return len(self.path_imgs)

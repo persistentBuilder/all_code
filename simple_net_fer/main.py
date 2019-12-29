@@ -43,7 +43,7 @@ def main():
     train_loader = dataset.trainloader
     test_loader = dataset.testloader
 
-    model_map = {'extendNet': extendNet, 'simpleNet': simpleNet, 'heatmapNet':heatmapNet, 'combineNet': combineNet}
+    model_map = {'extendNet': extendNet, 'simpleNet': simpleNet, 'heatmapNet': heatmapNet, 'combineNet': combineNet}
     if model_map[args.net] is not None:
         model = model_map[args.net](num_classes)
     else:
