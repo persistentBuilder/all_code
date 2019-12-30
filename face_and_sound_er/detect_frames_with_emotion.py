@@ -6,6 +6,11 @@ import torch.nn as nn
 from torch.nn import functional as F
 import argparse
 from extendNet import extendNet
+import torchvision.transforms as transforms
+
+
+def resize_face_image(img):
+    return cv2.resize(img, (image_resize_width, image_resize_height), interpolation=cv2.INTER_CUBIC)
 
 
 def get_faces_from_frame(img):
@@ -13,7 +18,7 @@ def get_faces_from_frame(img):
     face_images = []
     for i, d in enumerate(detected_faces):
         face_images.append(img[d.top():d.bottom(), d.left(): d.right()])
-    return face_images
+    return transform(resize_face_image(face_images))
 
 
 def load_model(model_path, model=None):
@@ -54,10 +59,16 @@ if __name__ == '__main__':
     video_file = args.video_path
     video_name = video_file.split("/", 1)[-1]
     video_base_path = video_file.rsplit("/", 1)[0]
+    image_resize_width = 224
+    image_resize_height = 224
     cap = cv2.VideoCapture(video_file)
     frame_count = 0
 
     face_detector = dlib.get_frontal_face_detector()
+    transform = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.ToTensor()
+    ])
 
     model = extendNet(num_classes=8)
     model = nn.DataParallel(model)
