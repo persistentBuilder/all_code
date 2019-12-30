@@ -17,8 +17,8 @@ def get_faces_from_frame(img):
     detected_faces = face_detector(img, 1)
     face_images = []
     for i, d in enumerate(detected_faces):
-        face_images.append(img[d.top():d.bottom(), d.left(): d.right()])
-    return transform(resize_face_image(face_images))
+        face_images.append(transform(resize_face_image(img[d.top():d.bottom(), d.left(): d.right()])))
+    return face_images
 
 
 def load_model(model_path, model=None):
