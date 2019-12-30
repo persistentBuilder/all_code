@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import argparse
 
+
 def get_faces_from_frame(img):
     detected_faces = face_detector(img, 1)
     face_images = []
@@ -17,8 +18,10 @@ def load_model(model_path, model=None):
     model.load_state_dict(checkpoint['state_dict'])
     return model
 
+
 def strong_pred(output):
     pass
+
 
 def check_emotion_in_face(face_image, model=None, model_path=None):
     if model is None:
@@ -29,6 +32,7 @@ def check_emotion_in_face(face_image, model=None, model_path=None):
         return torch.max(output.data, 1)[0]
     else:
         return -1
+
 
 def check_for_lip_movement():
     pass
@@ -51,16 +55,17 @@ if __name__ == '__main__':
 
     face_detector = dlib.get_frontal_face_detector()
 
+    model = load_model(model_path="/home/aryaman.g/projects/all_code/simple_net_fer/runs/affectnet_model/model_best.pth.tar")
+
     while(cap.isOpened()):
         ret, frame = cap.read()
         frame_count = frame_count + 1
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = get_faces_from_frame()
         for face_img in faces:
-            emotion_label = check_emotion_in_face(face_img)
+            emotion_label = check_emotion_in_face(face_img, model=model)
             if emotion_label >= 0:
                 write_frame(face_img, emotion_label, video_name, frame_count)
 
     cap.release()
     cv2.destroyAllWindows()
-    detector = dlib.get_frontal_face_detector()
