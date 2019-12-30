@@ -2,7 +2,10 @@ import cv2
 import dlib
 import numpy as np
 import torch
+import torch.nn as nn
+from torch.nn import functional as F
 import argparse
+from extendNet import extendNet
 
 
 def get_faces_from_frame(img):
@@ -15,6 +18,7 @@ def get_faces_from_frame(img):
 
 def load_model(model_path, model=None):
     checkpoint = torch.load(model_path)
+    print(checkpoint)
     model.load_state_dict(checkpoint['state_dict'])
     return model
 
@@ -55,13 +59,15 @@ if __name__ == '__main__':
 
     face_detector = dlib.get_frontal_face_detector()
 
-    model = load_model(model_path="/home/aryaman.g/projects/all_code/simple_net_fer/runs/affectnet_model/model_best.pth.tar")
+    model = extendNet(num_classes=8)
+    model = nn.DataParallel(model)
+    model = load_model(model_path="/home/aryaman.g/projects/all_code/simple_net_fer/runs/affectnet_model/model_best.pth.tar", model=model)
 
     while(cap.isOpened()):
         ret, frame = cap.read()
         frame_count = frame_count + 1
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = get_faces_from_frame()
+        faces = get_faces_from_frame(frame)
         for face_img in faces:
             emotion_label = check_emotion_in_face(face_img, model=model)
             if emotion_label >= 0:

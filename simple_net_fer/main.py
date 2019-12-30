@@ -11,6 +11,7 @@ from heatmapNet import heatmapNet
 from combineNet import combineNet
 import random
 import time
+import os, shutil
 
 parser = argparse.ArgumentParser("Branch Loss Example")
 parser.add_argument('--batch_size', type=int, default=32)
@@ -20,6 +21,7 @@ parser.add_argument('--include_neutral', type=bool, default=True)
 parser.add_argument('--dataset', type=str, default="ck+")
 parser.add_argument('--net', type=str, default="extendNet")
 parser.add_argument('--save-checkpoint', type=int, default=0)
+parser.add_argument('--name', type=str, default='affectnet_model')
 parser.add_argument('--resume', default='', type=str,
                     help='path to latest checkpoint (default: none)')
 args = parser.parse_args()
@@ -132,8 +134,8 @@ def train(train_loader, model, criterion, optimizer, epoch):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        if total > 10000:
-            break
+        #if total > 10000:
+        #    break
 
     print("loss  after ", epoch, " epoch: ", loss_triplet)
     acc = correct * 100. / total
