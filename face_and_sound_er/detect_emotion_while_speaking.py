@@ -22,24 +22,24 @@ class Frame(object):
         self.shape_predictor = shape_predictor
         self.m_start, self.m_end = face_utils.FACIAL_LANDMARKS_IDXS['mouth']
         self.detect_faces_rects()
-        self.rects = None
+        self.face_rects = None #face_rects
 
     def detect_faces_rects(self, from_gray=False):
         if from_gray:
             gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-            self.rects = self.detector(gray, 0)
+            self.face_rects = self.detector(gray, 0)
         else:
-            self.rects = self.detector(self.img, 1)
+            self.face_rects = self.detector(self.img, 1)
 
     def update_face_images(self, img):
         self.img = img
         self.detect_faces_rects()
 
     def get_best_overlap_with_face(self, current_rect):
-        for rect in self.rects:
-            olp = self.overlap(current_rect, rect)
-            if olp > rect.area()*0.5:
-                return rect
+        for face_rect in self.face_rects:
+            olp = self.overlap(current_rect, face_rect)
+            if olp > face_rect.area()*0.5:
+                return face_rect
         return None
 
     def get_mouth_for_face(self, rect):
@@ -57,7 +57,8 @@ class Frame(object):
         mouth_img = self.img[bottom_y:top_y, leftmost_x:rightmost_x]
         return mouth_img
 
-    def overlap(self, rect1, rect2):
+    @staticmethod
+    def overlap(rect1, rect2):
         dx = min(rect1.right(), rect2.right()) - max(rect1.left(), rect2.left())
         dy = min(rect1.bottom(), rect2.top()) - max(rect1.bottom(), rect2.top())
         if (dx >= 0) and (dy >= 0):
@@ -126,6 +127,8 @@ def check_emotion_in_face(face_image, model=None, model_path=None):
 def check_for_lip_movement(curr_frame, prev_frame, curr_face_rect):
 
     prev_face_rect = prev_frame.get_best_overlap_with_face(curr_face_rect)
+    if prev_face_rect is None:
+        return False
     prev_mouth_img = prev_frame.get_mouth_for_face(prev_face_rect)
     curr_mouth_img = curr_frame.get_mouth_for_face(curr_face_rect)
     return is_speaking(prev_mouth_img, curr_mouth_img, threshold=args.threshold)
@@ -144,7 +147,7 @@ def main():
     cap = cv2.VideoCapture(video_file)
     frame_count = 0
 
-    shape_predictor = dlib.shape_predictor(args["shape_predictor"])
+    shape_predictor = dlib.shape_predictor(args.shape_predictor)
     face_detector = dlib.get_frontal_face_detector()
 
     transform = transforms.Compose([
@@ -168,7 +171,7 @@ def main():
 
         curr_frame = Frame(frame, face_detector, shape_predictor)
         if prev_frame is not None:
-            for curr_face_rect in curr_frame.rects:
+            for curr_face_rect in curr_frame.face_rects:
                 if check_for_lip_movement(curr_frame, prev_frame, curr_face_rect):
                     face_img = curr_frame.get_face_from_rect(curr_face_rect)
                     emotion_label = check_emotion_in_face(transform(resize_face_image(face_img)), model=model)
