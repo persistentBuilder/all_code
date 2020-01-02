@@ -36,9 +36,13 @@ class Frame(object):
         self.detect_faces_rects()
 
     def get_best_overlap_with_face(self, current_rect):
+
+        def area_of_rect(face_rect):
+            return abs(face_rect.bottom()-face_rect.top())*abs(face_rect.right()-face_rect.left())
+
         for face_rect in self.face_rects:
             olp = self.overlap(current_rect, face_rect)
-            if olp > face_rect.area()*0.5:
+            if olp > area_of_rect(face_rect)*0.5:
                 return face_rect
         return None
 
