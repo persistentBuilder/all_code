@@ -16,12 +16,13 @@ import time
 
 class Frame(object):
 
-    def __init__(self, img, face_detector, shape_predictor):
+    def __init__(self, img, face_detector, shape_predictor, frame_num):
         self.img = img
         self.detector = face_detector
         self.shape_predictor = shape_predictor
         self.m_start, self.m_end = face_utils.FACIAL_LANDMARKS_IDXS['mouth']
         self.detect_faces_rects()
+        self.frame_num = frame_num
         self.face_rects = None #face_rects
 
     def detect_faces_rects(self, from_gray=False):
@@ -130,6 +131,7 @@ def check_emotion_in_face(face_image, model=None, model_path=None):
 
 def check_for_lip_movement(curr_frame, prev_frame, curr_face_rect):
 
+    print(curr_frame.frame_num, prev_frame.frame_num)
     prev_face_rect = prev_frame.get_best_overlap_with_face(curr_face_rect)
     if prev_face_rect is None:
         return False
@@ -169,11 +171,8 @@ def main():
     while cap.isOpened():
         ret, frame = cap.read()
         frame_count = frame_count + 1
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        # faces = get_faces_from_frame(frame)
-        # rects = face_detector(gray, 0)
 
-        curr_frame = Frame(frame, face_detector, shape_predictor)
+        curr_frame = Frame(frame, face_detector, shape_predictor, frame_count)
         if prev_frame is not None and curr_frame.face_rects is not None:
             for curr_face_rect in curr_frame.face_rects:
                 if check_for_lip_movement(curr_frame, prev_frame, curr_face_rect):
