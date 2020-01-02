@@ -170,7 +170,7 @@ def main():
         # rects = face_detector(gray, 0)
 
         curr_frame = Frame(frame, face_detector, shape_predictor)
-        if prev_frame is not None:
+        if prev_frame is not None and curr_frame.face_rects is not None:
             for curr_face_rect in curr_frame.face_rects:
                 if check_for_lip_movement(curr_frame, prev_frame, curr_face_rect):
                     face_img = curr_frame.get_face_from_rect(curr_face_rect)
