@@ -137,7 +137,8 @@ def check_for_lip_movement(curr_frame, prev_frame, curr_face_rect):
         return False
     prev_mouth_img = prev_frame.get_mouth_for_face(prev_face_rect)
     curr_mouth_img = curr_frame.get_mouth_for_face(curr_face_rect)
-    return is_speaking(prev_mouth_img, curr_mouth_img, threshold=args.threshold)
+    return is_speaking(prev_mouth_img, curr_mouth_img, threshold=args.threshold, width=curr_mouth_img.shape[1],
+                       height=curr_mouth_img.shape[0])
 
 
 def write_frame(face_img, emotion_label, video_name, frame_num):
