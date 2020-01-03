@@ -22,9 +22,9 @@ class CKPLUS(object):
 
         path_file = "relevant_images_paths.txt"
         trainset = CohnKanadeDataLoad(path_file=path_file, train_flag=True, include_neutral=include_neutral,
-                                      transform=transform, read_heatmap=False, combine=True)
+                                      transform=transform, input_type="fuse")
         testset = CohnKanadeDataLoad(path_file=path_file, train_flag=False, include_neutral=include_neutral,
-                                     transform=transform, read_heatmap=False, combine=True)
+                                     transform=transform, input_type="fuse")
 
         trainloader = torch.utils.data.DataLoader(
             trainset, batch_size=batch_size, shuffle=True,

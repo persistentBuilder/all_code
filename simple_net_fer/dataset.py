@@ -11,11 +11,11 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import random
 import cv2
-#from mtcnn import MTCNN
 from numpy import load
 import pandas as pd
 import time
 from AUmaps import *
+import dlib
 
 
 class CohnKanadeDataLoad(Dataset):
@@ -35,7 +35,7 @@ class CohnKanadeDataLoad(Dataset):
         self.gt = []
         self.num_classes = 8 if self.include_neutral else 7
         self.test_flag = not train_flag
-        self.face_detector = MTCNN()
+        self.face_detector = dlib.get_frontal_face_detector()
         self.input_type = input_type
         self.ddp = divide_distinct_persons
         self.heatmap_detector = AUdetector('shape_predictor_68_face_landmarks.dat', enable_cuda=torch.cuda.is_available())
@@ -54,7 +54,11 @@ class CohnKanadeDataLoad(Dataset):
         cnt = 0
         for line in self.all_lines:
             line = line[:-1]
-            base = '/home/aryaman.g/projects/FER/dataset/'
+            cwd = os.getcwd()
+            if cwd == '/Users/aryaman/research/all_code/simple_net_fer':
+                base = '/Users/aryaman/research/FER_datasets/'
+            else:
+                base = '/home/aryaman.g/projects/FER/dataset/'
             line = base + line.split("/", 5)[-1]
             person_set = line.rsplit("/", 1)[-1].split("_")[0]
             if (self.train_flag and person_set in train_set) or (self.test_flag and person_set in test_set):
@@ -67,16 +71,17 @@ class CohnKanadeDataLoad(Dataset):
                 heatmap_path = "heatmaps/" + line.rsplit("/", 1)[-1].split(".")[0] + '.npy'
 
                 if self.input_type == "fuse":
-                    try:
-                        img = self.resize_face_image(self.get_image_from_path(line))
-                        heatmap = self.resize_heatmap(self.get_au_heatmap(img))
-                        fused_img = self.fuse_heatmap_into_img(img, heatmap)
-                        if self.transform:
-                            fused_img = self.transform(fused_img)
-                        self.imgs.append(fused_img)
-                        self.gt.append(ground_truth)
-                    except:
-                        continue
+                    img = self.resize_face_image(self.get_image_from_path(line, without_face_crop=True))
+                    heatmap = self.resize_heatmap(self.get_au_heatmap(img).detach().clone().numpy())
+                    heatmap = heatmap + np.min(heatmap)
+                    heatmap = heatmap/np.max(heatmap) if np.max(heatmap) > 0 else heatmap
+                    fused_img = self.fuse_heatmap_into_img(img, heatmap)
+                    fused_img = (fused_img * 255 / np.max(fused_img)).astype('uint8')
+
+                    if self.transform:
+                        fused_img = self.transform(fused_img)
+                    self.imgs.append(fused_img)
+                    self.gt.append(ground_truth)
                 elif self.input_type == "stack":
                     try:
                         img = self.resize_face_image(self.get_image_from_path(line))
@@ -105,6 +110,7 @@ class CohnKanadeDataLoad(Dataset):
         f.close()
 
     def fuse_heatmap_into_img(self, img, heatmap):
+        #print(heatmap)
         red_channel = np.zeros([img.shape[0], img.shape[1]])
         green_channel = np.zeros([img.shape[0], img.shape[1]])
         blue_channel = np.zeros([img.shape[0], img.shape[1]])
@@ -112,18 +118,22 @@ class CohnKanadeDataLoad(Dataset):
             red_channel = np.add(red_channel, np.multiply(heatmap[i, :, :], img[:, :, 0]))
             green_channel = np.add(green_channel, np.multiply(heatmap[i, :, :], img[:, :, 1]))
             blue_channel = np.add(blue_channel, np.multiply(heatmap[i, :, :], img[:, :, 2]))
-        fused_image = np.stack([red_channel, green_channel, blue_channel], axis=0)
+        fused_image = np.stack([red_channel, green_channel, blue_channel], axis=2)
         return fused_image
 
     def get_au_heatmap(self, img):
-        dum, heatmap, dum_img = AUdetector.detectAU(img)
+        dum, heatmap, dum_img = self.heatmap_detector.detectAU(img)
         return heatmap
 
     def read_saved_heatmap(self, heatmap_path):
         return load(heatmap_path)
 
     def resize_heatmap(self, heatmap):
-        pass
+        resized_heatmap = []
+        for i in range(0, heatmap.shape[0]):
+            resized_heatmap.append(cv2.resize(heatmap[i,:,:], (self.image_resize_width, self.image_resize_height),
+                                              interpolation=cv2.INTER_CUBIC))
+        return np.stack(resized_heatmap, axis=0)
 
     def resize_face_image(self, img):
         return cv2.resize(img, (self.image_resize_width, self.image_resize_height), interpolation=cv2.INTER_CUBIC)
@@ -144,11 +154,12 @@ class CohnKanadeDataLoad(Dataset):
         return train_set, test_set
 
     def get_face_from_img(self, img):
-        results = self.face_detector.detect_faces(img)
-        x1, y1, width, height = results[0]['box']
-        x2, y2 = x1 + width, y1 + height
-        face_img = img[y1:y2, x1:x2]
-        return face_img
+
+        face_rects = self.detector(img, 0)
+        if face_rects is None or len(face_rects) != 1:
+            raise ("no face or more than one face")
+        for rect in face_rects:
+            return img[rect.top():rect.bottom(), rect.left(): rect.right()]
 
     def get_image_from_path(self, path, without_face_crop=False):
         #img = Image.open(path)
@@ -254,12 +265,8 @@ class AffectNetDataset(Dataset):
         return face_img
 
     def get_au_heatmap(self, img):
-        dum, heatmap, dum_img = AUdetector.detectAU(img)
+        dum, heatmap, dum_img = self.heatmap_detector.detectAU(img)
         return heatmap
-
-    def get_heatmap_modified_image(self, heatmap, img):
-        modified_img = img
-        return modified_img
 
     def __getitem__(self, index):
         img = self.resize_face_image(self.get_image_from_path(self.path_imgs[index], self.face_location[index]))
