@@ -23,19 +23,11 @@ class Frame:
         self.detector = face_detector
         self.shape_predictor = shape_predictor
         self.m_start, self.m_end = face_utils.FACIAL_LANDMARKS_IDXS['mouth']
-        self.face_rects = None #face_rects
-        self.detect_faces_rects()
+        self.face_rects = self.detector(self.img, 1)
 
-    def detect_faces_rects(self, from_gray=False):
-        if from_gray:
-            gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-            self.face_rects = self.detector(gray, 0)
-        else:
-            self.face_rects = self.detector(self.img, 1)
-
-    def update_face_images(self, img):
+    def update_face_image(self, img):
         self.img = img
-        self.detect_faces_rects()
+        self.face_rects = self.detector(self.img, 1)
 
     def get_best_overlap_with_face(self, current_rect):
 
