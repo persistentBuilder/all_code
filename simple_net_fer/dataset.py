@@ -73,10 +73,10 @@ class CohnKanadeDataLoad(Dataset):
                 if self.input_type == "fuse":
                     img = self.resize_face_image(self.get_image_from_path(line, without_face_crop=True))
                     heatmap = self.resize_heatmap(self.get_au_heatmap(img).detach().clone().numpy())
-                    heatmap = heatmap + np.min(heatmap)
-                    heatmap = heatmap/np.max(heatmap) if np.max(heatmap) > 0 else heatmap
+                    #heatmap = heatmap + np.min(heatmap)
+                    #heatmap = heatmap/np.max(heatmap) if np.max(heatmap) > 0 else heatmap
                     fused_img = self.fuse_heatmap_into_img(img, heatmap)
-                    fused_img = (fused_img * 255 / np.max(fused_img)).astype('uint8')
+                    #fused_img = (fused_img * 255 / np.max(fused_img) if np.max(fused_img) > 0 else fused_img).astype('uint8')
 
                     if self.transform:
                         fused_img = self.transform(fused_img)
