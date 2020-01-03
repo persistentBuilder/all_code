@@ -172,6 +172,8 @@ def main():
     prev_frame = None
     while cap.isOpened():
         ret, frame = cap.read()
+        if frame is None:
+            continue
         frame_count = frame_count + 1
 
         curr_frame = Frame(frame, face_detector, shape_predictor, frame_count)
@@ -198,7 +200,7 @@ if __name__ == '__main__':
     parser.add_argument("--width", type=int, default=800, help="width of window")
     parser.add_argument("--use-cuda", type=bool, default=True, help="use gpu")
     args = parser.parse_args()
-
+    print(args.use_cuda)
     image_resize_width = 224
     image_resize_height = 224
 
