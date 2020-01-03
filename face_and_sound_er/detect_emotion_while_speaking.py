@@ -14,7 +14,7 @@ import imutils
 import time
 
 
-class Frame(object):
+class Frame:
 
     def __init__(self, img, face_detector, shape_predictor, frame_num):
         self.img = img
@@ -164,8 +164,9 @@ def main():
 
     model = extendNet(num_classes=8)
     model = nn.DataParallel(model)
+
     model = load_model(
-        model_path="/home/aryaman.g/projects/all_code/simple_net_fer/runs/affectnet_model/model_best.pth.tar",
+        model_path=args.model_path,
         model=model)
     model.eval()
     prev_frame = None
@@ -188,12 +189,17 @@ def main():
 
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--video-path', type=str, default="")
     parser.add_argument("--shape-predictor", required=True, help="path to facial landmark predictor")
+    parser.add_argument("--model-path", required=True, help="path to model for predicting emotion")
     parser.add_argument("--threshold", type=int, default=500, help="threshold of speaking or not")
     parser.add_argument("--width", type=int, default=800, help="width of window")
+    parser.add_argument("--use-cuda", type=bool, default=True, help="use gpu")
     args = parser.parse_args()
+
     image_resize_width = 224
     image_resize_height = 224
+
     main()
