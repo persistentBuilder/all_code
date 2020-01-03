@@ -18,12 +18,13 @@ class Frame:
 
     def __init__(self, img, face_detector, shape_predictor, frame_num):
         self.img = img
+        self.frame_num = frame_num
+
         self.detector = face_detector
         self.shape_predictor = shape_predictor
         self.m_start, self.m_end = face_utils.FACIAL_LANDMARKS_IDXS['mouth']
-        self.detect_faces_rects()
-        self.frame_num = frame_num
         self.face_rects = None #face_rects
+        self.detect_faces_rects()
 
     def detect_faces_rects(self, from_gray=False):
         if from_gray:
