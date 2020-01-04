@@ -58,7 +58,7 @@ class Frame:
     @staticmethod
     def overlap(rect1, rect2):
         dx = min(rect1.right(), rect2.right()) - max(rect1.left(), rect2.left())
-        dy = min(rect1.bottom(), rect2.top()) - max(rect1.bottom(), rect2.top())
+        dy = min(rect1.bottom(), rect2.bottom()) - max(rect1.top(), rect2.top())
         if (dx >= 0) and (dy >= 0):
             return dx * dy
         else:
