@@ -64,6 +64,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--directory', action="store")
     parser.add_argument('--file_type', action="store")
-    parser.add_argument('--')
     args, unknown = parser.parse_known_args()
     main(args.directory, args.file_type)

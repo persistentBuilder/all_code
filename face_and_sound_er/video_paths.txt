@@ -1,0 +1,4 @@
+/Users/aryaman/research/FER_datasets/video/ErinBrockavich_shot_3.mp4
+/Users/aryaman/research/FER_datasets/video/ErinBrockavich_shot_2.mp4
+/Users/aryaman/research/FER_datasets/video/ErinBrockavich_shot_5.mp4
+/Users/aryaman/research/FER_datasets/video/ErinBrockavich_shot_4.mp4
