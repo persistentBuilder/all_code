@@ -165,6 +165,8 @@ def main():
     prev_frame = None
     while cap.isOpened():
         ret, frame = cap.read()
+        if ret is not True:
+            break
         if frame is None:
             continue
         frame_count = frame_count + 1
