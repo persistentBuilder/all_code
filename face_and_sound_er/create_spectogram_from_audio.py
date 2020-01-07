@@ -26,19 +26,20 @@ def get_wav_info(wav_file):
     return sound_info, frame_rate
 
 
-wav_files = ['/Users/aryaman/research/FER_datasets/video/ErinBrockavich_shot_2.wav',
-             '/Users/aryaman/research/FER_datasets/video/ErinBrockavich_shot_3.wav',
-             '/Users/aryaman/research/FER_datasets/video/ErinBrockavich_shot_4.wav',
-             '/Users/aryaman/research/FER_datasets/video/ErinBrockavich_shot_5.wav']
-for wav_file in wav_files:
-    graph_spectrogram(wav_file)
+if __name__ == '__main__':
+    wav_files = ['/Users/aryaman/research/FER_datasets/video/ErinBrockavich_shot_2.wav',
+                 '/Users/aryaman/research/FER_datasets/video/ErinBrockavich_shot_3.wav',
+                 '/Users/aryaman/research/FER_datasets/video/ErinBrockavich_shot_4.wav',
+                 '/Users/aryaman/research/FER_datasets/video/ErinBrockavich_shot_5.wav']
+    for wav_file in wav_files:
+        graph_spectrogram(wav_file)
 
-# sample_rate, samples = wavfile.read()
-# frequencies, times, spectrogram = signal.spectrogram(samples, sample_rate)
-# spectrogram = spectrogram*1000000
-# print(spectrogram, type(spectrogram), spectrogram.shape)
-# #spectrogram = (spectrogram/np.max(spectrogram))*255
-# plt.imshow(spectrogram)
-# plt.ylabel('Frequency [Hz]')
-# plt.xlabel('Time [sec]')
-# plt.show()
+    # sample_rate, samples = wavfile.read()
+    # frequencies, times, spectrogram = signal.spectrogram(samples, sample_rate)
+    # spectrogram = spectrogram*1000000
+    # print(spectrogram, type(spectrogram), spectrogram.shape)
+    # #spectrogram = (spectrogram/np.max(spectrogram))*255
+    # plt.imshow(spectrogram)
+    # plt.ylabel('Frequency [Hz]')
+    # plt.xlabel('Time [sec]')
+    # plt.show()
