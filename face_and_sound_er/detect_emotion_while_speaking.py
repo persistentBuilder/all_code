@@ -145,9 +145,11 @@ def write_frame(face_img, emotion_label, video_name, frame_num, folder_name):
 
 
 def write_all_faces(saved_faces, saved_frame_num, continuous_emotion, emotion_label, folder_name, video_name):
-    if continuous_emotion > 5:
+    if continuous_emotion > streak_for_emotions:
+        # write last saved face, if previous saved face already written
         write_frame(saved_faces[-1], emotion_label, video_name, saved_frame_num[-1], folder_name)
     else:
+        # if no face has been written, write all saved faces
         for i in range(0, len(saved_faces)):
             write_frame(saved_faces[i], emotion_label, video_name, saved_frame_num[i], folder_name)
 
@@ -156,7 +158,7 @@ def create_rename_folder(saved_frame_num, emotion_label, video_name):
     emotion_string = map_emotions[emotion_label]
     folder_name = video_name + """_{:06d}_""".format(saved_frame_num[0]) + "to" + \
                     """_{:06d}_""".format(saved_frame_num[-1]) + emotion_string
-    if len(saved_frame_num) == 5:
+    if len(saved_frame_num) == streak_for_emotions:
         os.mkdir(folder_name)
     else:
         prev_folder_name = video_name + """_{:06d}_""".format(saved_frame_num[0]) + "to" + \
@@ -201,11 +203,11 @@ def main():
         if frame is None:
             continue
         frame_count = frame_count + 1
-        if frame_count % 5 != 0:
+        if frame_count % frame_interval != 0:
             continue
 
         curr_frame = Frame(frame, face_detector, shape_predictor, frame_count)
-        if prev_frame is not None and curr_frame.face_rects is not None:
+        if prev_frame is not None and curr_frame.face_rects is not None and len(curr_frame.face_rects) == 1:
             for curr_face_rect in curr_frame.face_rects:
                 if check_for_lip_movement(curr_frame, prev_frame, curr_face_rect):
                     face_img = curr_frame.get_face_from_rect(curr_face_rect)
@@ -213,14 +215,16 @@ def main():
                     emotion_label = check_emotion_in_face(image_input_for_model, model=model)
                     if emotion_label > 0:
                         if emotion_label == prev_emotion:
+                            # extend the emotion scene for the face
                             continuous_emotion = continuous_emotion + 1
                             saved_faces.append(face_img)
                             saved_frame_num.append(frame_count)
-                            if continuous_emotion >= 5:
+                            if continuous_emotion >= streak_for_emotions:
                                 folder_name = create_rename_folder(saved_frame_num, emotion_label, video_name)
                                 write_all_faces(saved_faces, saved_frame_num, continuous_emotion, emotion_label,
                                                 folder_name, video_name)
                         else:
+                            # reinitialize the emotion and saved faces
                             continuous_emotion = 1
                             saved_faces = [face_img]
                             saved_frame_num = [frame_count]
@@ -244,5 +248,7 @@ if __name__ == '__main__':
     print(args.use_cuda)
     image_resize_width = 224
     image_resize_height = 224
+    streak_for_emotions = 5
+    frame_interval = 5
 
     main()
