@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -A aryaman.g
-#SBATCH --mem=81000
+#SBATCH --mem=11000
 #SBATCH --gres=gpu:1
 #SBATCH --time=8-00:00:00
 #SBATCH --mail-type=END

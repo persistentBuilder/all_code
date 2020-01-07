@@ -12,6 +12,10 @@ import datetime
 import argparse
 import imutils
 import time
+import os
+
+map_emotions = {0: "Neutral", 1: "Happiness", 2: "Sadness", 3: "Surprise", 4: "Fear", 5: "Disgust", 6: "Anger",
+                7: "Contempt"}
 
 
 class Frame:
@@ -105,7 +109,7 @@ def load_model(model_path, model=None):
 
 
 def strong_pred(value, prediction):
-    if value > 3 and prediction != 0:
+    if value > -0.2 and prediction != 0:
         return True
     return False
 
@@ -134,10 +138,33 @@ def check_for_lip_movement(curr_frame, prev_frame, curr_face_rect):
                        height=curr_mouth_img.shape[0])
 
 
-def write_frame(face_img, emotion_label, video_name, frame_num):
-    img_name_to_write = video_name+"""_{:06d}_""".format(frame_num) + str(emotion_label) + ".jpg"
+def write_frame(face_img, emotion_label, video_name, frame_num, folder_name):
+    img_name_to_write = folder_name + video_name + """_{:06d}_""".format(frame_num) + str(emotion_label) + ".jpg"
     print(img_name_to_write)
     cv2.imwrite(img_name_to_write, face_img)
+
+
+def write_all_faces(saved_faces, saved_frame_num, continuous_emotion, emotion_label, folder_name, video_name)
+    if continuous_emotion > 5:
+        write_frame(saved_faces[-1], emotion_label, video_name, saved_frame_num[-1], folder_name)
+    else:
+        for i in range(0, len(saved_faces)):
+            write_frame(saved_faces[i], emotion_label, video_name, saved_frame_num[i], folder_name)
+
+
+def create_rename_folder(saved_frame_num, emotion_label, video_name):
+    emotion_string = map_emotions[emotion_label]
+    folder_name = video_name + """_{:06d}_""".format(saved_frame_num[0]) + "to" + \
+                    """_{:06d}_""".format(saved_frame_num[-1]) + emotion_string
+    if len(saved_frame_num) == 5:
+        os.mkdir(folder_name)
+    else:
+        prev_folder_name = video_name + """_{:06d}_""".format(saved_frame_num[0]) + "to" + \
+                            """_{:06d}_""".format(saved_frame_num[-2]) + emotion_string
+        os.rename(prev_folder_name, folder_name)
+
+    path = os.getcwd()
+    return path + '/' + folder_name
 
 
 def main():
@@ -163,6 +190,10 @@ def main():
         model=model)
     model.eval()
     prev_frame = None
+    prev_emotion = -1
+    continuous_emotion = 0
+    saved_faces = []
+    saved_frame_num = []
     while cap.isOpened():
         ret, frame = cap.read()
         if ret is not True:
@@ -170,14 +201,30 @@ def main():
         if frame is None:
             continue
         frame_count = frame_count + 1
+        if frame_count % 5 != 0:
+            continue
 
         curr_frame = Frame(frame, face_detector, shape_predictor, frame_count)
         if prev_frame is not None and curr_frame.face_rects is not None:
             for curr_face_rect in curr_frame.face_rects:
                 if check_for_lip_movement(curr_frame, prev_frame, curr_face_rect):
                     face_img = curr_frame.get_face_from_rect(curr_face_rect)
-                    emotion_label = check_emotion_in_face(transform(resize_face_image(face_img)), model=model)
-                    if emotion_label > 0:
+                    image_input_for_model = transform(resize_face_image(face_img))
+                    emotion_label = check_emotion_in_face(image_input_for_model, model=model)
+                 if emotion_label > 0:
+                        if emotion_label == prev_emotion:
+                            continuous_emotion = continuous_emotion + 1
+                            saved_faces.append(face_img)
+                            saved_frame_num.append(frame_count)
+                            if continuous_emotion >= 5:
+                                folder_name = create_rename_folder(saved_frame_num, emotion_label, video_name)
+                                write_all_faces(saved_faces, saved_frame_num, continuous_emotion, emotion_label,
+                                                folder_name, video_name)
+                        else:
+                            continuous_emotion = 1
+                            saved_faces = [face_img]
+                            saved_frame_num = [frame_count]
+                        prev_emotion = emotion_label
                         print(frame_count)
                         write_frame(face_img, emotion_label, video_name, frame_count)
         prev_frame = curr_frame
