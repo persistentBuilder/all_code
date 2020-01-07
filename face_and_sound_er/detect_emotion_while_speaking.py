@@ -139,7 +139,7 @@ def check_for_lip_movement(curr_frame, prev_frame, curr_face_rect):
 
 
 def write_frame(face_img, emotion_label, video_name, frame_num, folder_name):
-    img_name_to_write = folder_name + video_name + """_{:06d}_""".format(frame_num) + str(emotion_label) + ".jpg"
+    img_name_to_write = folder_name + '/' + video_name + """_{:06d}_""".format(frame_num) + str(emotion_label) + ".jpg"
     print(img_name_to_write)
     cv2.imwrite(img_name_to_write, face_img)
 
