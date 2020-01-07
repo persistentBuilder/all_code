@@ -144,7 +144,7 @@ def write_frame(face_img, emotion_label, video_name, frame_num, folder_name):
     cv2.imwrite(img_name_to_write, face_img)
 
 
-def write_all_faces(saved_faces, saved_frame_num, continuous_emotion, emotion_label, folder_name, video_name)
+def write_all_faces(saved_faces, saved_frame_num, continuous_emotion, emotion_label, folder_name, video_name):
     if continuous_emotion > 5:
         write_frame(saved_faces[-1], emotion_label, video_name, saved_frame_num[-1], folder_name)
     else:
@@ -211,7 +211,7 @@ def main():
                     face_img = curr_frame.get_face_from_rect(curr_face_rect)
                     image_input_for_model = transform(resize_face_image(face_img))
                     emotion_label = check_emotion_in_face(image_input_for_model, model=model)
-                 if emotion_label > 0:
+                    if emotion_label > 0:
                         if emotion_label == prev_emotion:
                             continuous_emotion = continuous_emotion + 1
                             saved_faces.append(face_img)
@@ -226,7 +226,6 @@ def main():
                             saved_frame_num = [frame_count]
                         prev_emotion = emotion_label
                         print(frame_count)
-                        write_frame(face_img, emotion_label, video_name, frame_count)
         prev_frame = curr_frame
     cap.release()
     cv2.destroyAllWindows()
